@@ -37,3 +37,7 @@ Primary Examples (`examples/`)
 ## Future Work
 
 ## References
+=======
+# content-aware-segmentation
+Unsupervised Video Summarization via Successor Embeddings
+>>>>>>> refs/remotes/content-aware-segmentation/main
