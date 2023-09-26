@@ -12,10 +12,12 @@ from plotting import annotate_plot
 from load_data import *
 
 class SegmentSuccessorAnalyzer:
+    # Initialize the class with video duration and embedding values
     def __init__(self, total_duration, embedding_values):
         self.embedding_values = embedding_values
         self.total_duration = total_duration
-        
+
+    # Function to get the timestamps for each frame and embedding combination - this creates the frame-embedding pairs
     def get_segmented_frames_and_embeddings(self, video_files):
         frame_embedding_pairs = []
         timestamps = []
@@ -38,25 +40,23 @@ class SegmentSuccessorAnalyzer:
         frame_embedding_pairs, timestamps = self.get_segmented_frames_and_embeddings(video_files)
         temporal_embeddings = np.array([emb for _, emb in frame_embedding_pairs])
         distances = np.linalg.norm(temporal_embeddings[1:] - temporal_embeddings[:-1], axis=1)
+        # Call to an external function to calculate successor distances
         successor_distance = calculate_successor_distance(temporal_embeddings)
+        # Call to an external function to identify new segments
         new_segments = check_for_new_segment(distances, successor_distance)
 
-        # Plot key frames with dynamic sizing
+        # Plot key frames with dynamic sizing and save them
         # Calculate rows and columns for subplots
         num_keyframes = len(new_segments)
         num_cols = 4
         num_rows = int(np.ceil(num_keyframes / num_cols))
         fig, axes = plt.subplots(num_rows, num_cols, figsize=(4 * num_cols, 4 * num_rows))
-        # If we have only one subplot, axes won't be an array. Turn it into an array for consistency
         if num_keyframes == 1:
             axes = np.array([[axes]])
-        # Flatten the axes array for easier traversal
         flat_axes = axes.flatten()
-        # Initialize keyframe data dictionary
         keyframe_data = {}
         for i, ax in enumerate(flat_axes[:num_keyframes]):
             ax.imshow(cv2.cvtColor(frame_embedding_pairs[new_segments[i]][0], cv2.COLOR_BGR2RGB))
-            # Annotate the plot
             annotate_plot(ax,
                         idx=new_segments[i],
                         successor_sim=successor_distance,
@@ -72,7 +72,6 @@ class SegmentSuccessorAnalyzer:
                 'index': new_segments[i],
                 'time_frame': timestamps[new_segments[i]]
             }
-        # Hide unused subplot axes
         for i in range(num_keyframes, len(flat_axes)):
             flat_axes[i].axis('off')
         plt_path = os.path.join(save_dir, 'keyframes_grid.png')
@@ -133,7 +132,3 @@ def save_single_keyframes(frame_embedding_pairs, new_segments, distances, succes
         plt_path = os.path.join(save_dir, f'keyframe_{idx}_{timestamps[idx]:.2f}.png')
         plt.savefig(plt_path)
         plt.close(fig)
-
-if __name__ == "__main__":
-    # Example: using SegmentSuccessorAnalyzer
-    run_analysis(SegmentSuccessorAnalyzer)

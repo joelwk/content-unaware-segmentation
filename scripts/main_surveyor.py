@@ -10,6 +10,7 @@ from embedding_surveyor import SlidingWindowAnalyzer
 
 def run_analysis(specific_videos=None):
     directory = read_config(section="directory")
+    thresholds = read_config(section="thresholds")
     video_ids = get_all_video_ids(directory['originalframes'])
 
     # Filter based on specific videos if provided
@@ -25,8 +26,8 @@ def run_analysis(specific_videos=None):
         save_dir = f"datasets/{video}"
         os.makedirs(save_dir, exist_ok=True)
         
-        analyzer = SlidingWindowAnalyzer(total_duration, embedding_values, window_size=30, step_size=15)
-        analyzer.initialize_thresholds()
+        analyzer = SlidingWindowAnalyzer(total_duration, embedding_values, window_size=int(thresholds['window_size']), step_size=int(thresholds['step_size']))
+        analyzer.initialize_thresholds(avg_distance=float(thresholds['avg_distance']), std_dev=float(thresholds['std_dev']))
         analyzer.run(key_video_files, save_dir)
 
 if __name__ == "__main__":

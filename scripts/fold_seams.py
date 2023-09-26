@@ -1,17 +1,19 @@
 import os
-import glob
 import json
 import cv2
-import numpy as np
-from sklearn.preprocessing import normalize
-import configparser
-from segment_processing import *
-from matplotlib import pyplot as plt
-from matplotlib.lines import Line2D
-from plotting import annotate_plot
-from load_data import *
-from segment_processing import *
 import subprocess
+from load_data import read_config, get_all_video_ids, load_video_files, load_key_video_files, load_embedding_files, load_embedding_values, get_video_duration
+
+def run_ffmpeg_command(start_time, end_time, input_path, output_path):
+    command = [
+        'ffmpeg',
+        '-ss', str(start_time),
+        '-to', str(end_time),
+        '-i', input_path,
+        '-c:v', 'copy', '-c:a', 'copy',
+        '-y', output_path
+    ]
+    subprocess.run(command)
 
 def segment_video_using_keyframes_and_embeddings(video_path, cut_output_dir, keyframe_timestamps, frame_embedding_pairs, timestamps, suffix_=None):
     video_key_frames = cv2.VideoCapture(video_path)
@@ -56,44 +58,47 @@ def segment_video_using_keyframes_and_embeddings(video_path, cut_output_dir, key
     
     video_key_frames.release()
 
+
 def get_segmented_frames_and_embeddings(video_files, embedding_values, total_duration):
     frame_embedding_pairs = []
     timestamps = []
-    for vid_path in video_files:
-        vid_cap = cv2.VideoCapture(vid_path)
-        for emb_idx, embedding in enumerate(embedding_values):
-            vid_cap.set(cv2.CAP_PROP_POS_FRAMES, emb_idx)
-            success, frame = vid_cap.read()
-            if not success:
-                break
-            timestamp = (total_duration / len(embedding_values)) * emb_idx
-            frame_embedding_pairs.append((frame, embedding))
-            timestamps.append(timestamp)
-        vid_cap.release()
+    vid_cap = cv2.VideoCapture(video_files[0])
+    for emb_idx, embedding in enumerate(embedding_values):
+        vid_cap.set(cv2.CAP_PROP_POS_FRAMES, emb_idx)
+        success, frame = vid_cap.read()
+        if not success:
+            break
+        timestamp = (total_duration / len(embedding_values)) * emb_idx
+        frame_embedding_pairs.append((frame, embedding))
+        timestamps.append(timestamp)
+    vid_cap.release()
     return frame_embedding_pairs, timestamps
 
 def main(specific_videos=None):
     params = read_config(section="directory")
-    video_ids = get_all_video_ids(params['originalframes'])
-    if specific_videos is not None:
-        video_ids = [vid for vid in video_ids if vid in specific_videos]
+    video_ids = get_all_video_ids(params['originalframes']) if specific_videos is None else specific_videos
     for vid in video_ids:
-        video_files = load_video_files(str(vid), params)
-        key_video_files = load_key_video_files(str(vid), params)
-        embedding_files = load_embedding_files(str(vid), params)
-        embedding_values = load_embedding_values(embedding_files)
-        total_duration = get_video_duration(video_files) 
-        clip_output = f"./datasets/originalvideos/cut_segments/{vid}"
-        os.makedirs(clip_output, exist_ok=True)
-        json_path = f"./datasets/originalvideos/keyframes/{vid}/keyframe_data.json"
-        with open(json_path, 'r') as f:
-            keyframe_data = json.load(f)
-        keyframe_timestamps = [frame_data['time_frame'] for frame_data in keyframe_data.values()]
-        # Get frame embedding pairs from original video and embeddings
-        frame_embedding_pairs, timestamps = get_segmented_frames_and_embeddings(video_files, embedding_values, total_duration)
-        # Use keyframe meta data to get clips
-        segment_video_using_keyframes_and_embeddings(key_video_files[0], clip_output, keyframe_timestamps, frame_embedding_pairs, timestamps, suffix_='_fromkeyframes')
-        segment_video_using_keyframes_and_embeddings(video_files[0], clip_output, keyframe_timestamps, frame_embedding_pairs, timestamps, suffix_='_fromfullvideo')
+        setup_for_video(vid, params)
+
+def setup_for_video(vid, params):
+    video_files = load_video_files(str(vid), params)
+    key_video_files = load_key_video_files(str(vid), params)
+    embedding_files = load_embedding_files(str(vid), params)
+    embedding_values = load_embedding_values(embedding_files)
+    total_duration = get_video_duration(video_files)
+    clip_output = f"./datasets/originalvideos/cut_segments/{vid}"
+    os.makedirs(clip_output, exist_ok=True)
+    # Load the json with index timestamps
+    json_path = f"./datasets/originalvideos/keyframes/{vid}/keyframe_data.json"
+    with open(json_path, 'r') as f:
+        keyframe_data = json.load(f)
+    # Get the timestamp and frame index for each keyframe
+    keyframe_timestamps = [frame_data['time_frame'] for frame_data in keyframe_data.values()]
+    frame_embedding_pairs, timestamps = get_segmented_frames_and_embeddings(video_files, embedding_values, total_duration)
+    # Process segments sourced from the key frame videos and original videos
+    segment_video_using_keyframes_and_embeddings(key_video_files[0], clip_output, keyframe_timestamps, frame_embedding_pairs, timestamps,suffix_='_fromkeyvideo')
+    segment_video_using_keyframes_and_embeddings(video_files[0], clip_output, keyframe_timestamps, frame_embedding_pairs, timestamps,suffix_='_fromfullvideo')
+
 
 if __name__ == "__main__":
     main()

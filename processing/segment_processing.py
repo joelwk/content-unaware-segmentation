@@ -6,14 +6,10 @@ import cv2
 from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import normalize
-
-def read_config(section="thresholds"):
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-    return {key: config[section][key] for key in config[section]}
+from load_data import read_config
 
 def check_for_new_segment(distances, successor_distances):
-    params = read_config()
+    params = read_config(section='thresholds')
     successor_value = params.get('successor_value', None)
     new_segments = []
     
