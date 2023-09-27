@@ -23,9 +23,8 @@ def run_analysis(specific_videos=None):
         embedding_values = load_embedding_values(embedding_files)
         total_duration = get_video_duration(video_files)
 
-        save_dir = f"datasets/{video}"
+        save_dir = f"./output/{video}"
         os.makedirs(save_dir, exist_ok=True)
-        
         analyzer = SlidingWindowAnalyzer(total_duration, embedding_values, window_size=int(thresholds['window_size']), step_size=int(thresholds['step_size']))
         analyzer.initialize_thresholds(avg_distance=float(thresholds['avg_distance']), std_dev=float(thresholds['std_dev']))
         analyzer.run(key_video_files, save_dir)

@@ -4,13 +4,12 @@ import json
 import os
 import cv2
 import numpy as np
-import configparser
 import pandas as pd
 from sklearn.preprocessing import normalize
 
 def read_config(section="directory"):
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read('./config.ini')
     return {key: config[section][key] for key in config[section]}
 
 def load_video_files(vid, params):

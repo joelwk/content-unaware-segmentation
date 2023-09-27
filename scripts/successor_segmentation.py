@@ -108,7 +108,7 @@ def run_analysis(analyzer_class, specific_videos=None):
         # Use full video duration
         total_duration = get_video_duration(video_files)
 
-        save_dir = f"./datasets/originalvideos/keyframes/{video}"
+        save_dir = f"./output/keyframes/{video}"
         os.makedirs(save_dir, exist_ok=True)
         analyzer = analyzer_class(total_duration, embedding_values)
         # Then use video with key frames

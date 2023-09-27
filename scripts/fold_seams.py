@@ -3,7 +3,6 @@ import json
 import cv2
 import subprocess
 from load_data import read_config, get_all_video_ids, load_video_files, load_key_video_files, load_embedding_files, load_embedding_values, get_video_duration
-
 def run_ffmpeg_command(start_time, end_time, input_path, output_path):
     command = [
         'ffmpeg',
@@ -15,13 +14,19 @@ def run_ffmpeg_command(start_time, end_time, input_path, output_path):
     ]
     subprocess.run(command)
 
-def segment_video_using_keyframes_and_embeddings(video_path, cut_output_dir, keyframe_timestamps, frame_embedding_pairs, timestamps, suffix_=None):
+import cv2
+import subprocess
+
+def segment_video_using_keyframes_and_embeddings(video_path, cut_output_dir, keyframe_timestamps, suffix_=None):
+    thresholds = read_config(section="thresholds")
     video_key_frames = cv2.VideoCapture(video_path)
     writer = None
     current_keyframe = 0
     frame_rate = int(video_key_frames.get(cv2.CAP_PROP_FPS))
     start_time = 0
     segment_idx = 0
+    tolerance = float(thresholds['tolerance']) 
+    
     while True:
         ret, frame = video_key_frames.read()
         if not ret:
@@ -29,35 +34,43 @@ def segment_video_using_keyframes_and_embeddings(video_path, cut_output_dir, key
         current_time = video_key_frames.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
         if current_keyframe < len(keyframe_timestamps) - 1 and current_time >= keyframe_timestamps[current_keyframe]:
             end_time = current_time
+            
+            # Calculate 10% tolerance and adjust start and end times
+            tolerance = float(thresholds['tolerance']) * (end_time - start_time)
+            adjusted_start_time = start_time + tolerance
+            adjusted_end_time = end_time - tolerance
             output_path = f"{cut_output_dir}/cut_segment_{segment_idx}_{suffix_}.mp4"
             command = [
                 'ffmpeg',
-                '-ss', str(start_time),      # start time
-                '-to', str(end_time),        # end time
-                '-i', video_path,            # input file
-                '-c:v', 'copy', '-c:a', 'copy', # codec options: copy both audio and video streams
-                '-y', output_path            # output file
+                '-ss', str(adjusted_start_time),  # Adjusted start time
+                '-to', str(adjusted_end_time),    # Adjusted end time
+                '-i', video_path,                # Input file
+                '-c:v', 'copy', '-c:a', 'copy',  # Codec options: copy both audio and video streams
+                '-y', output_path                # Output file
             ]
             subprocess.run(command)
+            
             start_time = current_time
             segment_idx += 1
             current_keyframe += 1
-
     # Process the final segment
     if start_time < current_time:
+        # Calculate 10% tolerance and adjust start and end times for the final segment
+        tolerance = float(thresholds['tolerance']) * (current_time - start_time)
+        adjusted_start_time = start_time + tolerance
+        adjusted_end_time = current_time - tolerance
+        
         output_path = f"{cut_output_dir}/cut_segment_{segment_idx}_{suffix_}.mp4"
         command = [
             'ffmpeg',
-            '-ss', str(start_time),
-            '-to', str(current_time),
+            '-ss', str(adjusted_start_time),  # Adjusted start time
+            '-to', str(adjusted_end_time),    # Adjusted end time
             '-i', video_path,
             '-c:v', 'copy', '-c:a', 'copy',
             '-y', output_path
         ]
         subprocess.run(command)
-    
     video_key_frames.release()
-
 
 def get_segmented_frames_and_embeddings(video_files, embedding_values, total_duration):
     frame_embedding_pairs = []
@@ -86,19 +99,18 @@ def setup_for_video(vid, params):
     embedding_files = load_embedding_files(str(vid), params)
     embedding_values = load_embedding_values(embedding_files)
     total_duration = get_video_duration(video_files)
-    clip_output = f"./datasets/originalvideos/cut_segments/{vid}"
+    clip_output = f"./output/cut_segments/{vid}"
     os.makedirs(clip_output, exist_ok=True)
     # Load the json with index timestamps
-    json_path = f"./datasets/originalvideos/keyframes/{vid}/keyframe_data.json"
+    json_path = f"./output/keyframes/{vid}/keyframe_data.json"
     with open(json_path, 'r') as f:
         keyframe_data = json.load(f)
     # Get the timestamp and frame index for each keyframe
     keyframe_timestamps = [frame_data['time_frame'] for frame_data in keyframe_data.values()]
     frame_embedding_pairs, timestamps = get_segmented_frames_and_embeddings(video_files, embedding_values, total_duration)
     # Process segments sourced from the key frame videos and original videos
-    segment_video_using_keyframes_and_embeddings(key_video_files[0], clip_output, keyframe_timestamps, frame_embedding_pairs, timestamps,suffix_='_fromkeyvideo')
-    segment_video_using_keyframes_and_embeddings(video_files[0], clip_output, keyframe_timestamps, frame_embedding_pairs, timestamps,suffix_='_fromfullvideo')
-
+    segment_video_using_keyframes_and_embeddings(key_video_files[0], clip_output, keyframe_timestamps, suffix_='_fromkeyvideo')
+    segment_video_using_keyframes_and_embeddings(video_files[0], clip_output, keyframe_timestamps, suffix_='_fromfullvideo')
 
 if __name__ == "__main__":
     main()

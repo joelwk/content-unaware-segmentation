@@ -20,7 +20,6 @@ def check_for_new_segment(distances, successor_distances):
     
     if successor_value is not None:
         successor_value = float(successor_value)
-        
     for i in range(num_frames - 1):
         if distances.ndim == 1:
             avg_distance_frame_i = distances[i]
@@ -28,14 +27,11 @@ def check_for_new_segment(distances, successor_distances):
         elif distances.ndim == 2:
             avg_distance_frame_i = np.mean(distances[i, :])
             std_dev_frame_i = np.std(distances[i, :])
-        
         threshold_frame_i = avg_distance_frame_i + 0.5 * std_dev_frame_i
         successor_distance = successor_distances[i]
         comparison_value = successor_value if successor_value is not None else threshold_frame_i
-        
         if float(successor_distance) > comparison_value:
             new_segments.append(i)
-            
     return new_segments
     
 def calculate_successor_distance(embeddings):

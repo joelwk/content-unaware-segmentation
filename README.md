@@ -7,18 +7,20 @@ This project introduces an efficient approach to video segmentation aimed at sum
 4. **Embedding Surveyor**: Leverages K-Nearest Neighbors (KNN) to fine-tune the dynamic thresholds, providing a second layer of adaptability and increasing segmentation accuracy.
 5. **Seam Detection**: Leveraging the successor score and KNN for detecting "trending" seams presents a novel way of identifying key moments without needing explicit object recognition or manual labeling.
 6. **Adaptive System**: The combination of dynamic thresholds and successor scores allows the system to adapt to different videos and changes within a single video.
-## Datasets (`datasets/`)
-## Processing (`processing/`)
-## Primary Scripts (`scripts/`)
-## Evaluation Plots (`plots/`)
-## Primary Examples (`notebooks/`)
-## Configuration and Setup (`config.ini`)
-The following is a list of the inital parameters and their default values: 
-- Directories
-    - datasets = ./datasets/originalvideos
-    - keyframes = ./datasets/originalkeyframes
-    - embeddings = ./datasets/originalembeddings
-- Thresholds
+## Source 
+- Main functions and scripts (`scripts/`):
+- Utility functions and maintenance scripts (`processing/`):
+## Methods & Examples (`notebooks/`)
+- Sample data for testing (`notebooks/`):
+    - Examples to test locally or cloud notebook:
+        - `Example1.ipynb`
+## Configuration and Setup
+Contains sample videos, keyframes, and embeddings.
+- Sample data for testing (`datasets/`):
+    - `originalvideos/`
+    - `originalkeyframes/`
+    - `originalembeddings/`
+- Thresholds (`notebooks/config.ini`):
     - avg_distance = 0.5
     - std_dev = 0.15
     - successor_value = 0.6
