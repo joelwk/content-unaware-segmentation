@@ -9,7 +9,7 @@ from sklearn.preprocessing import normalize
 
 def read_config(section="directory"):
     config = configparser.ConfigParser()
-    config.read('./config.ini')
+    config.read('config.ini')
     return {key: config[section][key] for key in config[section]}
 
 def load_video_files(vid, params):
@@ -19,6 +19,9 @@ def load_key_video_files(vid, params):
     return sorted(glob.glob(f"{params['keyframes']}/{vid}.mp4"))
 
 def load_embedding_files(vid, params):
+    return sorted(glob.glob(f"{params['originalembeddings']}/{vid}.npy"))
+
+def load_keyframe_embedding_files(vid, params):
     return sorted(glob.glob(f"{params['embeddings']}/{vid}.npy"))
 
 def load_embedding_values(embedding_files):

@@ -8,9 +8,19 @@ from sklearn.manifold import TSNE
 from segment_processing import calculate_successor_distance, check_for_new_segment, calculate_distances_to_centroids
 from plotting import calculate_dynamic_perplexity,plot_frames,calculate_centroid_labels,plot_and_save_tsne,combine_and_save_plots,annotate_plot
 from load_data import read_config
+from typing import Any, Tuple, List, Optional, Union
 
 class SlidingWindowAnalyzer:
-    def __init__(self, total_duration, embedding_values, window_size=30, step_size=15, avg_distance=0.5, std_dev=0.25):
+    def __init__(self, total_duration: float, embedding_values: Union[List[np.ndarray], np.ndarray], 
+                 window_size: Optional[float] = None, step_size: Optional[float] = None, 
+                 avg_distance: Optional[float] = None, std_dev: Optional[float] = None) -> None:
+        # Validate types
+        if not isinstance(total_duration, float):
+            raise TypeError("total_duration must be a float.")
+        if not isinstance(embedding_values, (list, np.ndarray)):
+            raise TypeError("embedding_values must be a list or numpy array.")
+        
+        self.thresholds = self.read_thresholds_config()
         # Initialize instance variables
         self.embedding_values = np.array(embedding_values)
         self._initialize_window_params(total_duration, window_size, step_size)
@@ -19,17 +29,28 @@ class SlidingWindowAnalyzer:
         self.total_duration = total_duration
         self.initialize_thresholds(avg_distance, std_dev)
 
-    def _initialize_window_params(self, total_duration, window_size, step_size):
+    @staticmethod
+    def read_thresholds_config(section: str = 'thresholds') -> dict:
+        params = read_config(section=section)
+        return {key: None if params.get(key) in [None, 'None'] else float(params.get(key)) 
+                for key in ['successor_value', 'phash_threshold']}
+
+    def _initialize_window_params(self, total_duration: float, window_size: Optional[float], step_size: Optional[float]) -> None:
+        if not isinstance(total_duration, float):
+            raise TypeError("total_duration must be a float.")
         # Calculate average time per embedding
         avg_sec_per_embedding = total_duration / len(self.embedding_values)
-        
         # Initialize window and step parameters
-        self.window_frame_count = math.ceil(window_size / avg_sec_per_embedding)
-        self.step_frame_count = math.ceil(step_size / avg_sec_per_embedding)
+        self.window_frame_count = math.ceil(window_size / avg_sec_per_embedding) if window_size else None
+        self.step_frame_count = math.ceil(step_size / avg_sec_per_embedding) if step_size else None
         self.global_frame_start_idx = 0
         self.window_idx = 0
 
-    def initialize_thresholds(self, avg_distance, std_dev):
+    def initialize_thresholds(self, avg_distance: Optional[float], std_dev: Optional[float]) -> None:
+        if avg_distance and not isinstance(avg_distance, float):
+            raise TypeError("avg_distance must be a float.")
+        if std_dev and not isinstance(std_dev, float):
+            raise TypeError("std_dev must be a float.")
         # Initialize distance thresholds for segmenting
         self.avg_distance_threshold = avg_distance
         self.std_dev_threshold = std_dev
@@ -39,25 +60,25 @@ class SlidingWindowAnalyzer:
     def _window_indices(self):
         # Generate indices for window selection
         end_idx = self.window_frame_count
-        while end_idx <= len(self.embedding_values):
+        while end_idx and end_idx <= len(self.embedding_values):
             yield self.global_frame_start_idx, end_idx
             self.global_frame_start_idx += self.step_frame_count
             end_idx += self.step_frame_count
             self.window_idx += 1
 
-    def update_thresholds(self):
+    def update_thresholds(self) -> None:
         # Update the thresholds based on recent history
         last_five_diffs_avg = np.mean(np.diff(self.past_avg_distances[-5:]))
         last_five_diffs_std = np.mean(np.diff(self.past_std_devs[-5:]))
         self.avg_distance_threshold += abs(last_five_diffs_avg) + 0.001
         self.std_dev_threshold += abs(last_five_diffs_std) + 0.001
-
-    def check_for_new_segment(self, distances, successor_distances):
-        return check_for_new_segment(distances, successor_distances)
-
+        
+    def check_for_new_segment(self, distances, successor_distances, thresholds=None):
+        # Use stored thresholds if none are provided
+        thresholds = thresholds or self.thresholds
+        return check_for_new_segment(distances, successor_distances, thresholds)
     def calculate_successor_distance(self, embeddings):
         return calculate_successor_distance(embeddings)
-
     def calculate_distances_to_centroids(self, distances, indices):
         return calculate_distances_to_centroids(distances, indices)
 
@@ -113,7 +134,6 @@ class SlidingWindowAnalyzer:
         knn = NearestNeighbors(n_neighbors=optimal_k)
         knn.fit(reduced_embeddings)
         plot_frames(axes, frame_embedding_pairs, distance, distances, optimal_k, global_frame_start_idx, window_idx, new_segments)
-
         # Save and plot additional figures
         centroid_to_label = calculate_centroid_labels(reduced_embeddings, knn)
         # Save and plot figures
@@ -145,7 +165,7 @@ class SlidingWindowAnalyzer:
             vid_cap.release()
         return frame_embedding_pairs, np.array(segmented_embeddings)
 
-    def run(self, key_video_files, save_dir):
+    def run(self, key_video_files, total_duration, save_dir, global_video_analysis):
         for start_idx, end_idx in self._window_indices():
             print(f"Processing window: start_idx={start_idx}, end_idx={end_idx}")
             is_last_window = end_idx - start_idx < self.window_frame_count and end_idx - start_idx > 0
@@ -156,6 +176,15 @@ class SlidingWindowAnalyzer:
             _, _, distances = self.calculate_optimal_k(temporal_embeddings)
             successor_distance = self.calculate_successor_distance(temporal_embeddings)
             new_segments = self.check_for_new_segment(distances, successor_distance)
+            global_video_analysis.append({
+                'video_files': key_video_files,
+                'total_duration': total_duration,
+                'start_idx': start_idx,
+                'end_idx': end_idx,
+                'distances': distances,
+                'successor_distance': successor_distance,
+                'new_segments': new_segments
+            })
             if is_last_window:
                 if len(temporal_embeddings) == 0 or len(new_segments) < 2:
                     print("The last window has insufficient data for KNN. Skipping this window.")
@@ -163,3 +192,4 @@ class SlidingWindowAnalyzer:
                 else:
                     print("The last window has sufficient data. Proceeding as usual.")
             self.plot_frames_and_tsne(frame_embedding_pairs, temporal_embeddings, self.window_idx, self.global_frame_start_idx, save_dir, new_segments=new_segments)
+            

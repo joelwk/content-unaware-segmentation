@@ -8,11 +8,11 @@ This project introduces an efficient approach to video segmentation aimed at sum
 5. **Seam Detection**: Leveraging the successor score and KNN for detecting "trending" seams presents a novel way of identifying key moments without needing explicit object recognition or manual labeling.
 6. **Adaptive System**: The combination of dynamic thresholds and successor scores allows the system to adapt to different videos and changes within a single video.
 ## Source 
-- Main functions and scripts (`scripts/`):
-- Utility functions and maintenance scripts (`processing/`):
+- Files with main methods (`scripts/`):
+- Files with utility functions and maintenance scripts (`processing/`):
 ## Methods & Examples (`notebooks/`)
 - Sample data for testing (`notebooks/`):
-    - Examples to test locally or cloud notebook:
+    - Examples to test locally or with a cloud notebook:
         - `Example1.ipynb`
 ## Configuration and Setup
 Contains sample videos, keyframes, and embeddings.

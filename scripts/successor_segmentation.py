@@ -10,43 +10,75 @@ from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from plotting import annotate_plot
 from load_data import *
+from typing import List, Tuple, Optional, Dict, Union
+import numpy as np
+from PIL import Image
+from imagehash import phash
 
 class SegmentSuccessorAnalyzer:
-    # Initialize the class with video duration and embedding values
-    def __init__(self, total_duration, embedding_values):
+    def __init__(self, total_duration: float, embedding_values: np.ndarray, thresholds: Dict[str, Optional[float]],
+                 max_segment_duration: Optional[int] = None) -> None:
+        # Validate types
+        if not isinstance(total_duration, float):
+            raise TypeError("total_duration must be a float.")
+        if not isinstance(embedding_values, np.ndarray):
+            raise TypeError("embedding_values must be a numpy array.")
+        
+        # Read and store thresholds from config
+        self.thresholds = self.read_thresholds_config()
+        
         self.embedding_values = embedding_values
         self.total_duration = total_duration
+        self.max_segment_duration = int(self.thresholds['max_duration']) if max_segment_duration is not None else None
 
-    # Function to get the timestamps for each frame and embedding combination - this creates the frame-embedding pairs
-    def get_segmented_frames_and_embeddings(self, video_files):
-        frame_embedding_pairs = []
-        timestamps = []
-        for vid_path in video_files:
-            vid_cap = cv2.VideoCapture(vid_path)
-            for emb_idx, embedding in enumerate(self.embedding_values):
-                vid_cap.set(cv2.CAP_PROP_POS_FRAMES, emb_idx)
-                success, frame = vid_cap.read()
-                if not success:
-                    break
-                timestamp = (self.total_duration / len(self.embedding_values)) * emb_idx
-                frame_embedding_pairs.append((frame, embedding))
-                timestamps.append(timestamp)
-            vid_cap.release()
-        return frame_embedding_pairs, timestamps
+    @staticmethod
+    def read_thresholds_config(section: str = 'thresholds') -> dict:
+        params = read_config(section=section)
+        return {key: None if params.get(key) in [None, 'None'] else float(params.get(key)) 
+                for key in ['successor_value', 'phash_threshold']}
 
-    def run(self, video_files, save_dir):
-        keyframe_embeddings = []
-        keyframe_timestamps = []
-        frame_embedding_pairs, timestamps = self.get_segmented_frames_and_embeddings(video_files)
+    def run(self, video_files: List[str], thresholds: Dict[str, Optional[float]], keyframe_files: List[str], save_dir: str) -> Tuple[List[np.ndarray], List[float]]:
+        # Use stored thresholds if none are provided
+        thresholds = thresholds or self.thresholds
+        frame_embedding_pairs, timestamps = get_segmented_and_filtered_frames(video_files, keyframe_files,self.embedding_values, thresholds)
         temporal_embeddings = np.array([emb for _, emb in frame_embedding_pairs])
         distances = np.linalg.norm(temporal_embeddings[1:] - temporal_embeddings[:-1], axis=1)
-        # Call to an external function to calculate successor distances
-        successor_distance = calculate_successor_distance(temporal_embeddings)
-        # Call to an external function to identify new segments
-        new_segments = check_for_new_segment(distances, successor_distance)
+        successor_distance = calculate_successor_distance(self.embedding_values)
+        initial_new_segments = check_for_new_segment(distances, successor_distance, thresholds)
+        new_segments = self.calculate_new_segments(initial_new_segments, timestamps)
+        self.save_keyframes(frame_embedding_pairs, new_segments, distances, successor_distance, timestamps, save_dir)
 
-        # Plot key frames with dynamic sizing and save them
-        # Calculate rows and columns for subplots
+    def calculate_new_segments(self, initial_new_segments, timestamps):
+        if self.max_segment_duration is None:
+            return initial_new_segments
+        new_segments = []
+        last_timestamp = timestamps[initial_new_segments[0]]
+        new_segments.append(initial_new_segments[0])
+        for i in range(1, len(initial_new_segments)):
+            current_timestamp = timestamps[initial_new_segments[i]]
+            if (current_timestamp - last_timestamp) > self.max_segment_duration:
+                acceptable_frame = self.find_acceptable_frame(initial_new_segments[i-1:i+1], timestamps, last_timestamp)
+                new_segments.append(acceptable_frame)
+                last_timestamp = timestamps[acceptable_frame]
+            new_segments.append(initial_new_segments[i])
+        return new_segments
+
+    def find_acceptable_frame(self, intervening_frames, timestamps, last_timestamp):
+        for j in range(intervening_frames[0], intervening_frames[1]):
+            if (timestamps[j] - last_timestamp) <= self.max_segment_duration:
+                return j
+        return intervening_frames[0]
+
+    def save_keyframes(self, frame_embedding_pairs, new_segments, distances, successor_distance, timestamps, save_dir):
+        saved_keyframes = set()
+        for segment_idx in new_segments:
+            if segment_idx not in saved_keyframes:
+                frame, _ = frame_embedding_pairs[segment_idx]
+                save_path = os.path.join(save_dir, f'keyframe_{segment_idx}.png')
+                cv2.imwrite(save_path, frame)
+                saved_keyframes.add(segment_idx)
+
+        # Plot key frames widist dynamic sizing and save them
         num_keyframes = len(new_segments)
         num_cols = 4
         num_rows = int(np.ceil(num_keyframes / num_cols))
@@ -66,7 +98,6 @@ class SegmentSuccessorAnalyzer:
                         segment_label=f"Fame{i}",
                         timestamp=timestamps[new_segments[i]]
                         )
-            
             # Store the index and time frame for this keyframe
             keyframe_data[i] = {
                 'index': new_segments[i],
@@ -80,10 +111,7 @@ class SegmentSuccessorAnalyzer:
         json_path = os.path.join(save_dir, 'keyframe_data.json')
         with open(json_path, 'w') as f:
             json.dump(keyframe_data, f)
-        save_single_keyframes(frame_embedding_pairs, new_segments, distances, successor_distance, timestamps, save_dir)
-        return keyframe_embeddings, keyframe_timestamps
 
-# Function to annotate the plot
 def annotate_plot(ax, idx, successor_sim, distances, global_frame_start_idx, window_idx, segment_label, timestamp=None):
     title_elements = [
         f"{segment_label}",
@@ -96,6 +124,7 @@ def annotate_plot(ax, idx, successor_sim, distances, global_frame_start_idx, win
     ax.legend(handles=legend_elements, fontsize=6)
 
 def run_analysis(analyzer_class, specific_videos=None):
+    thresholds = read_thresholds_config()  
     params = read_config(section="directory")
     video_ids = get_all_video_ids(params['originalframes'])
     if specific_videos is not None:
@@ -103,32 +132,11 @@ def run_analysis(analyzer_class, specific_videos=None):
     for video in video_ids:
         video_files = load_video_files(video, params)
         key_video_files = load_key_video_files(video, params)
-        embedding_files = load_embedding_files(video, params)
-        embedding_values = load_embedding_values(embedding_files)
-        # Use full video duration
+        keyframe_embedding_files = load_keyframe_embedding_files(video, params)
+        embedding_values = load_embedding_values(keyframe_embedding_files)
         total_duration = get_video_duration(video_files)
-
         save_dir = f"./output/keyframes/{video}"
         os.makedirs(save_dir, exist_ok=True)
-        analyzer = analyzer_class(total_duration, embedding_values)
-        # Then use video with key frames
-        analyzer.run(key_video_files, save_dir)
-
-def save_single_keyframes(frame_embedding_pairs, new_segments, distances, successor_distance, timestamps, save_dir):
-    for i, idx in enumerate(new_segments):
-        fig, ax = plt.subplots(figsize=(4, 4))
-        ax.imshow(cv2.cvtColor(frame_embedding_pairs[idx][0], cv2.COLOR_BGR2RGB))
-        # Annotate the plot
-        annotate_plot(ax,
-                      idx=idx,
-                      successor_sim=successor_distance,
-                      distances=distances,
-                      global_frame_start_idx=0,
-                      window_idx=i,
-                      segment_label="FrameIndex",
-                      timestamp=timestamps[idx]
-                     )
-        # Save the individual image
-        plt_path = os.path.join(save_dir, f'keyframe_{idx}_{timestamps[idx]:.2f}.png')
-        plt.savefig(plt_path)
-        plt.close(fig)
+        analyzer = analyzer_class(total_duration, embedding_values,thresholds)
+        analyzer.run(video_files,thresholds, key_video_files, save_dir)
+        

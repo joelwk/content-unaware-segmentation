@@ -1,32 +1,30 @@
 import os
+from imagehash import phash
 import json
 import cv2
-import subprocess
-from load_data import read_config, get_all_video_ids, load_video_files, load_key_video_files, load_embedding_files, load_embedding_values, get_video_duration
-def run_ffmpeg_command(start_time, end_time, input_path, output_path):
-    command = [
-        'ffmpeg',
-        '-ss', str(start_time),
-        '-to', str(end_time),
-        '-i', input_path,
-        '-c:v', 'copy', '-c:a', 'copy',
-        '-y', output_path
-    ]
-    subprocess.run(command)
-
+import numpy as np
+from PIL import Image
 import cv2
 import subprocess
+from typing import List, Tuple, Union, Optional
+from load_data import read_config, get_all_video_ids, load_video_files, load_key_video_files, load_embedding_files, load_embedding_values, get_video_duration, load_keyframe_embedding_files
+from segment_processing import get_segmented_and_filtered_frames, filter_keyframes_based_on_phash, calculate_successor_distance, check_for_new_segment, calculate_distances_to_centroids, read_thresholds_config
 
-def segment_video_using_keyframes_and_embeddings(video_path, cut_output_dir, keyframe_timestamps, suffix_=None):
+def segment_video_using_keyframes_and_embeddings(video_path, cut_output_dir, keyframe_timestamps, thresholds, suffix_=None):
+    # Validate types
+    if not isinstance(video_path, str):
+        raise TypeError("video_path must be a string.")
+    if not isinstance(cut_output_dir, str):
+        raise TypeError("cut_output_dir must be a string.")
+    if not isinstance(keyframe_timestamps, list):
+        raise TypeError("keyframe_timestamps must be a list.")
     thresholds = read_config(section="thresholds")
     video_key_frames = cv2.VideoCapture(video_path)
     writer = None
     current_keyframe = 0
     frame_rate = int(video_key_frames.get(cv2.CAP_PROP_FPS))
     start_time = 0
-    segment_idx = 0
-    tolerance = float(thresholds['tolerance']) 
-    
+    segment_idx = 0    
     while True:
         ret, frame = video_key_frames.read()
         if not ret:
@@ -35,36 +33,46 @@ def segment_video_using_keyframes_and_embeddings(video_path, cut_output_dir, key
         if current_keyframe < len(keyframe_timestamps) - 1 and current_time >= keyframe_timestamps[current_keyframe]:
             end_time = current_time
             
-            # Calculate 10% tolerance and adjust start and end times
-            tolerance = float(thresholds['tolerance']) * (end_time - start_time)
-            adjusted_start_time = start_time + tolerance
-            adjusted_end_time = end_time - tolerance
+            if "keyframe" in str(suffix_):
+                # Calculate 10% tolerance and adjust start and end times
+                tolerance = float(thresholds['tolerance'])  * (end_time - start_time)
+                adjusted_start_time = start_time + tolerance
+                adjusted_end_time = end_time - tolerance
+            else:
+                adjusted_start_time = start_time
+                adjusted_end_time = end_time
+
             output_path = f"{cut_output_dir}/cut_segment_{segment_idx}_{suffix_}.mp4"
             command = [
                 'ffmpeg',
-                '-ss', str(adjusted_start_time),  # Adjusted start time
-                '-to', str(adjusted_end_time),    # Adjusted end time
-                '-i', video_path,                # Input file
-                '-c:v', 'copy', '-c:a', 'copy',  # Codec options: copy both audio and video streams
-                '-y', output_path                # Output file
+                '-ss', str(adjusted_start_time),
+                '-to', str(adjusted_end_time),
+                '-i', video_path,
+                '-c:v', 'copy', '-c:a', 'copy',
+                '-y', output_path
             ]
             subprocess.run(command)
             
             start_time = current_time
             segment_idx += 1
             current_keyframe += 1
+
     # Process the final segment
     if start_time < current_time:
-        # Calculate 10% tolerance and adjust start and end times for the final segment
-        tolerance = float(thresholds['tolerance']) * (current_time - start_time)
-        adjusted_start_time = start_time + tolerance
-        adjusted_end_time = current_time - tolerance
-        
+        if "keyframe" in str(suffix_):
+            # Calculate 10% tolerance and adjust start and end times for the final segment
+            tolerance = float(thresholds['tolerance'])  * (current_time - start_time)
+            adjusted_start_time = start_time + tolerance
+            adjusted_end_time = current_time - tolerance
+        else:
+            adjusted_start_time = start_time
+            adjusted_end_time = current_time
+            
         output_path = f"{cut_output_dir}/cut_segment_{segment_idx}_{suffix_}.mp4"
         command = [
             'ffmpeg',
-            '-ss', str(adjusted_start_time),  # Adjusted start time
-            '-to', str(adjusted_end_time),    # Adjusted end time
+            '-ss', str(adjusted_start_time),
+            '-to', str(adjusted_end_time),
             '-i', video_path,
             '-c:v', 'copy', '-c:a', 'copy',
             '-y', output_path
@@ -72,45 +80,32 @@ def segment_video_using_keyframes_and_embeddings(video_path, cut_output_dir, key
         subprocess.run(command)
     video_key_frames.release()
 
-def get_segmented_frames_and_embeddings(video_files, embedding_values, total_duration):
-    frame_embedding_pairs = []
-    timestamps = []
-    vid_cap = cv2.VideoCapture(video_files[0])
-    for emb_idx, embedding in enumerate(embedding_values):
-        vid_cap.set(cv2.CAP_PROP_POS_FRAMES, emb_idx)
-        success, frame = vid_cap.read()
-        if not success:
-            break
-        timestamp = (total_duration / len(embedding_values)) * emb_idx
-        frame_embedding_pairs.append((frame, embedding))
-        timestamps.append(timestamp)
-    vid_cap.release()
-    return frame_embedding_pairs, timestamps
 
 def main(specific_videos=None):
     params = read_config(section="directory")
+    thresholds = read_thresholds_config()  # Read thresholds here for consistency
+    
+    # Validate types
+    if specific_videos and not isinstance(specific_videos, list):
+        raise TypeError("specific_videos must be a list or None.")
+    
     video_ids = get_all_video_ids(params['originalframes']) if specific_videos is None else specific_videos
     for vid in video_ids:
-        setup_for_video(vid, params)
+        setup_for_video(vid, params, thresholds)  # Pass thresholds as an argument
 
-def setup_for_video(vid, params):
+def setup_for_video(vid, params, thresholds):
+    # Validate types
+    thresholds = read_thresholds_config()
     video_files = load_video_files(str(vid), params)
     key_video_files = load_key_video_files(str(vid), params)
-    embedding_files = load_embedding_files(str(vid), params)
+    embedding_files = load_keyframe_embedding_files(str(vid), params)
     embedding_values = load_embedding_values(embedding_files)
-    total_duration = get_video_duration(video_files)
     clip_output = f"./output/cut_segments/{vid}"
     os.makedirs(clip_output, exist_ok=True)
-    # Load the json with index timestamps
     json_path = f"./output/keyframes/{vid}/keyframe_data.json"
     with open(json_path, 'r') as f:
         keyframe_data = json.load(f)
-    # Get the timestamp and frame index for each keyframe
-    keyframe_timestamps = [frame_data['time_frame'] for frame_data in keyframe_data.values()]
-    frame_embedding_pairs, timestamps = get_segmented_frames_and_embeddings(video_files, embedding_values, total_duration)
-    # Process segments sourced from the key frame videos and original videos
-    segment_video_using_keyframes_and_embeddings(key_video_files[0], clip_output, keyframe_timestamps, suffix_='_fromkeyvideo')
-    segment_video_using_keyframes_and_embeddings(video_files[0], clip_output, keyframe_timestamps, suffix_='_fromfullvideo')
-
-if __name__ == "__main__":
-    main()
+    # Extract timestamps from the keyframe_data
+    keyframe_timestamps = [data['time_frame'] for data in keyframe_data.values()]
+    # Using the union of timestamps to segment video
+    segment_video_using_keyframes_and_embeddings(key_video_files[0], clip_output, keyframe_timestamps,thresholds, suffix_='_fromkeyvideo_filtered')
