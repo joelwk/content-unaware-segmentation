@@ -68,7 +68,7 @@ def combine_and_save_plots(wind_save_path, window_idx, save_dir):
     plt.show()
 
 def evaluate_embedding_statistics(ids):
-    if isinstance(ids, int):  # Convert integer to single-item list
+    if isinstance(ids, int): 
         ids = [ids]
     directory = read_config(section="directory")
     fig, axs = plt.subplots(5, 1, figsize=(15, 10), dpi=100) 
@@ -101,6 +101,6 @@ def evaluate_embedding_statistics(ids):
         ax.set_xlabel('Total Duration (s)')
         ax.set_ylabel(ylabel)
         ax.legend()
-        ax.grid(True)  # Added grid for better readability
+        ax.grid(True)  
     plt.tight_layout()
     plt.show()

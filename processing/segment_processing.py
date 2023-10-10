@@ -30,6 +30,8 @@ def check_for_new_segment(distances: Union[np.ndarray, List[float]],
         comparison_value = thresholds['successor_value'] or threshold_frame_i
         
         if float(successor_distance) > float(comparison_value):
+            print(f"New segment detected at frame {i + 1}")  ## Marks a new segment starting at next frame.
+
             new_segments.append(i)
     return new_segments
     
@@ -130,9 +132,9 @@ def get_segmented_frames_and_embeddings(video_files: List[str],
         avg_duration_per_frame = float(round(total_duration / total_frames, 4))
         end_idx = end_idx - 1
         avg_duration_per_embedding = float(round(total_duration / end_idx, 4))
-        print(f"Duration of video {video_files[0][-5]}: {total_duration} seconds")
-        print(f"Average Duration per Frame: {avg_duration_per_frame} seconds")
-        print(f"Average Duration per Embedding: {avg_duration_per_embedding} seconds")
+        print(f"Duration in seconds: {total_duration} seconds")
+        print(f"Average Duration per frame: {avg_duration_per_frame} seconds")
+        print(f"Average Duration per embedding: {avg_duration_per_embedding} seconds")
         print(f"____________________________________________________________________")
         # Validate start and end indices
         if start_idx >= total_frames or end_idx > total_frames:

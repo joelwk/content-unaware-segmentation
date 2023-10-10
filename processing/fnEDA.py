@@ -1,26 +1,33 @@
-import cv2
-import matplotlib.gridspec as gridspec
-from load_data import *
-from sklearn.metrics.pairwise import euclidean_distances
-import pickle
+import os
+import configparser
 import glob
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
-from sklearn.neighbors import NearestNeighbors
-import matplotlib.pyplot as plt
-import numpy as np
-from collections import defaultdict
-from sklearn.metrics.pairwise import euclidean_distances
-import numpy as np
+import pickle
+
 import cv2
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+from collections import defaultdict
+import numpy as np
+
+from sklearn.metrics.pairwise import euclidean_distances
+from sklearn.decomposition import PCA
+from sklearn.neighbors import NearestNeighbors
+from sklearn.manifold import TSNE
+from sklearn.preprocessing import StandardScaler
+
+from load_data import get_all_video_ids, load_video_files, load_embedding_values, load_embedding_files, load_key_video_files, load_keyframe_embedding_files
+from segment_processing import get_segmented_frames_and_embeddings, get_video_duration
+from embedding_surveyor import SlidingWindowAnalyzer
+from fnEDA import *
+
 scatter_size = (9, 4)
+
 def initialize_video(video_file):
     vid_cap = cv2.VideoCapture(video_file)
-    frame_rate = vid_cap.get(cv2.CAP_PROP_FPS)
+    frame_rate = int(vid_cap.get(cv2.CAP_PROP_FPS))
     return vid_cap, frame_rate
 
-def visualize_frames(vid_cap, frame_indices, embedding_values):
+def visualize_frames_bars(vid_cap, frame_indices, embedding_values):
     n_rows = int(np.ceil(len(frame_indices) / 5))
     fig = plt.figure(figsize=(15, 2 * n_rows + 5))
     gs = gridspec.GridSpec(n_rows + 1, 5, height_ratios=[1] * n_rows + [2])
@@ -44,7 +51,6 @@ def plot_embedding_and_similarity(fig, gs, frame_indices, embedding_values, is_a
     ax1 = plt.subplot(gs[-5:])
     plot_indices = [idx for idx in frame_indices if idx < len(embedding_values)]
     next_indices = plot_indices[1:] + [None]
-    
     ax1.bar(range(len(plot_indices)), 
             [euclidean_distances(embedding_values[i].reshape(1, -1), 
                                  embedding_values[next_indices[i]].reshape(1, -1))[0][0] if next_indices[i] is not None else 0 
@@ -60,7 +66,6 @@ def plot_embedding_and_similarity(fig, gs, frame_indices, embedding_values, is_a
         plotted_values = [np.mean(embedding_values[i]) for i in plot_indices]
         ax2.set_ylabel('Avg. Embedding Vector', fontsize=10)
     else:
-        # Example: Using the first dimension of the embedding for plotting
         plotted_values = [embedding_values[i][0] for i in plot_indices]
         ax2.set_ylabel('Specific Dimension Value', fontsize=10)
     ax2.scatter(range(len(plot_indices)), plotted_values, color='red', label='Embedding Vectors')
@@ -72,13 +77,10 @@ def plot_embedding_and_similarity(fig, gs, frame_indices, embedding_values, is_a
     plt.tight_layout()
     plt.show()
 
-
-def view_pca_time(original_embeddings, key_embeddings, fps):
+def view_pca_time_single(original_embeddings, key_embeddings, fps):
     # Convert frame indices to time in seconds
     original_time_seconds = np.arange(len(original_embeddings)) / fps
     key_time_seconds = np.arange(len(key_embeddings)) / fps
-
-    # Perform PCA and visualize for original video
     original_em_values = np.vstack(original_embeddings)
     pca = PCA(n_components=2)
     reduced_embeddings = pca.fit_transform(original_em_values)
@@ -89,8 +91,6 @@ def view_pca_time(original_embeddings, key_embeddings, fps):
     plt.ylabel('Principal Component 2')
     plt.tight_layout()
     plt.show()
-
-    # Perform PCA and visualize for keyframes
     key_em_values = np.vstack(key_embeddings)
     pca = PCA(n_components=2)
     key_reduced_embeddings = pca.fit_transform(key_em_values)
@@ -137,7 +137,6 @@ def plot_frames(indices, frame_embedding_pairs, reduced_embeddings, max_rows=1, 
             distance_to_centroid = np.linalg.norm(reduced_embeddings[emb_idx] - np.array(centroid))
             labels.append(f"Frame {emb_idx}\nCentroid Seq Count: {sequence_count[centroid]}\nDistance: {distance_to_centroid:.2f}\nCentroid: ({centroid})")
             plotted_indices.add(emb_idx)
-
     if len(unique_frames) > 0:
         total_rows = int(np.ceil(len(unique_frames) / 4.0))
         fig, axes = plt.subplots(total_rows, 4, figsize=(10, 5 * total_rows / 4))
@@ -233,15 +232,12 @@ def run_optimized_knn(embedding_values, clip_indices_to_visualize=None, scatter_
     plt.title(f't-SNE Scatter Plot with Best k = {best_k}')
     plt.show()
 
-
 def visualize_clips(num_clips, vid_cap, embedding_values, window_size=6, threshold_factor=0.5):
     total_frames = int(vid_cap.get(cv2.CAP_PROP_FRAME_COUNT))
     frame_rate = int(vid_cap.get(cv2.CAP_PROP_FPS))
-    
     # Initialize variables
     rolling_window = []
     frames_to_plot = []
-    
     # Specify clip indices to visualize
     clip_indices_to_visualize = list(range(0, min(num_clips, len(embedding_values))))
     next_indices = clip_indices_to_visualize[1:] + [None]
@@ -263,7 +259,6 @@ def visualize_clips(num_clips, vid_cap, embedding_values, window_size=6, thresho
         if similarity is not None and similarity > avg_similarity * threshold_factor:
             print(f"Potential visual transition at frame {start_frame} with similarity score {similarity}")
             frames_to_plot.append((frame, start_frame, np.mean(embedding_values[emb_idx]), similarity))
-    
     # Plotting
     n_rows = int(np.ceil(len(frames_to_plot) / 5))
     fig = plt.figure(figsize=(20, 4 * n_rows))
@@ -272,6 +267,76 @@ def visualize_clips(num_clips, vid_cap, embedding_values, window_size=6, thresho
         ax.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         ax.axis('off')
         ax.set_title(f'Frame {start_frame}\nAvg Embedding: {avg_embedding}\nSuccessor Similarity: {similarity}', fontsize=10)
-
     plt.show()
     vid_cap.release()
+
+def visualize_frames(vid_cap, frame_indices, title):
+    fig, axes = plt.subplots(1, len(frame_indices), figsize=(12,5))
+    if not isinstance(axes, np.ndarray):
+        axes = [axes]
+    for ax, frame_index in zip(axes, frame_indices):
+        vid_cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+        ret, frame = vid_cap.read()
+        if ret:
+            ax.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            ax.set_title(f"Frame {frame_index}")
+    plt.suptitle(title)
+    plt.show()
+
+def load_embeddings(directory):
+    embeddings = np.load(directory)
+    return embeddings
+
+def find_similar_frames(ref_embedding_file, target_embedding_file, ref_video_file, target_video_file, ref_frame_index, top_n=5, use_cosine=False):
+    # Load embeddings
+    ref_embeddings = load_embeddings(ref_embedding_file)
+    target_embeddings = load_embeddings(target_embedding_file)
+    # Initialize video
+    ref_vid_cap, ref_frame_rate = initialize_video(ref_video_file)
+    target_vid_cap, target_frame_rate = initialize_video(target_video_file)
+    # Use Nearest Neighbors to find the most similar frames
+    metric_type = 'euclidean' if use_cosine else 'hamming'
+    nbrs = NearestNeighbors(n_neighbors=top_n, metric=metric_type).fit(target_embeddings)
+    distances, indices = nbrs.kneighbors([ref_embeddings[ref_frame_index]])
+    # Visualize the similar frames
+    print(f"Reference frame {ref_frame_index} is most similar to target frames {indices[0]}")
+    # Visualize the reference frame
+    visualize_frames(ref_vid_cap, [ref_frame_index], "Reference Frame")
+    # Visualize the similar frames from the target video
+    visualize_frames(target_vid_cap, indices[0], "Top Similar Frames using {}".format("Euclidean Similarity" if use_cosine else "Hamming Distance"))
+
+def get_frame_by_pca_coordinates(pca_coordinates, pca, original_embeddings, frame_embedding_pairs, video_name):
+    inv_transformed_embedding = pca.inverse_transform([pca_coordinates])
+    nbrs = NearestNeighbors(n_neighbors=1).fit(original_embeddings)
+    distances, indices = nbrs.kneighbors(inv_transformed_embedding)
+    closest_frame = frame_embedding_pairs[video_name][indices[0][0]][0]
+    return closest_frame
+
+def load_embeddings_from_directory(directory):
+    embeddings = {}
+    for filename in os.listdir(directory):
+        if filename.endswith('1.npy') or filename.endswith('2.npy'):
+            embeddings[filename] = np.load(os.path.join(directory, filename))
+    return embeddings
+
+def view_pca_time(embedding_directory, frame_embedding_pairs, frame_rate):
+    embeddings = load_embeddings_from_directory(embedding_directory)
+    pca = PCA(n_components=2)
+    scaler = StandardScaler()
+    plt.figure(figsize=(9, 4))
+    colors = plt.cm.jet(np.linspace(0, 1, len(embeddings)))
+    for idx, (video_name, embedding) in enumerate(embeddings.items()):
+        normalized_embedding = scaler.fit_transform(embedding)
+        pca_result = pca.fit_transform(normalized_embedding)
+        x = pca_result[:, 0]
+        y = pca_result[:, 1]
+        num_frames = embedding.shape[0]
+        time_stamps = np.linspace(0.2, 1.0, num_frames)
+        for i in range(len(x)):
+            plt.scatter(x[i], y[i], color=colors[idx], alpha=time_stamps[i], label=video_name if i == 0 else "")
+    plt.legend()
+    plt.xlabel('PCA 1')
+    plt.ylabel('PCA 2')
+    plt.title('Distinct video embeddings by Duration')
+    plt.show()
+
