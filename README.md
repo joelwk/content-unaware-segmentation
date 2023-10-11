@@ -12,7 +12,7 @@ This project introduces an efficient approach to video segmentation aimed at sum
     </tr>
     <tr>
       <td style="text-align: center;">
-        <img src="./plots/original_video_scatter.png" alt="Original Video Scatter Plot" width="350" height="250">
+        <img src="./plots/original_video_scatter_1.png" alt="Original Video Scatter Plot" width="350" height="250">
       </td>
       <td style="text-align: center;">
         <img src="./plots/key_video_scatter_1.png" alt="Key Video Scatter Plot" width="350" height="250">
