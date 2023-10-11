@@ -1,7 +1,8 @@
 # Project Description
 This project introduces an efficient approach to video segmentation aimed at summarizing videos into highly representative keyframes. The core technique involves analyzing semantic embeddings extracted from video frame embedding pairs. Each frame is assigned a score calculated based on the Euclidean distance between the embedding of the current frame and its successor. A significant distance implies dissimilarity between frames as a marker for a potential transition or "seam" between segments. These seams are identified when the successor score surpasses a dynamically adjusted threshold or is set according to a predetermined value. 
 ##
-### Evaluation plots of video 1:
+
+
 <div style="margin: 0 auto; width: 80%;">
   <table style="margin: 0 auto;">
     <tr>
@@ -11,19 +12,19 @@ This project introduces an efficient approach to video segmentation aimed at sum
     </tr>
     <tr>
       <td style="text-align: center;">
-        <img src="./plots/original_video_scatter.png" alt="Original Video Scatter Plot" width="300" height="200">
+        <img src="./plots/original_video_scatter.png" alt="Original Video Scatter Plot" width="350" height="250">
       </td>
       <td style="text-align: center;">
-        <img src="./plots/key_video_scatter_1.png" alt="Key Video Scatter Plot" width="300" height="200">
+        <img src="./plots/key_video_scatter_1.png" alt="Key Video Scatter Plot" width="350" height="250">
       </td>
     </tr>
     <tr>
       <td rowspan="2" style="text-align: center;">
-        <img src="./plots/original_video_embeddings_1.png" alt="Original Video Embeddings" width="400" height="300"><br>
-        <img src="./plots/keyframe_embeddings_1.png" alt="Keyframe Embeddings" width="400" height="300">
+        <img src="./plots/original_video_embeddings_1.png" alt="Original Video Embeddings" width="350" height="325"><br>
+        <img src="./plots/keyframe_embeddings_1.png" alt="Keyframe Embeddings" width="350" height="325">
       </td>
       <td style="text-align: center;">
-        <img src="./plots/1.png" alt="Alt text" width="600" height="750">
+        <img src="./plots/1.png" alt="Alt text" width="350" height="650">
       </td>
     </tr>
   </table>
@@ -52,10 +53,6 @@ This project introduces an efficient approach to video segmentation aimed at sum
   - **Successor Values**: The euclidean distance of the current frame to its successor frame - used to qualify new segments.
 </details>
 
-### Relevant Tools and Libraries
-- [clip-video-encode](https://github.com/iejMac/clip-video-encode/blob/main/clip_video_encode/clip_video_encode.py)
-- [video2dataset](https://github.com/iejMac/video2dataset/blob/main/requirements.txt)
-
 ## Key features:
 1. **Dynamic Thresholds**: Adapts to varying video content using a rolling average and standard deviation to adjust the threshold.
 2. **Embedding Semantics**: Using semantic embeddings allows for a rich representation of content, enabling the system to identify better segments where a significant change occurs.
@@ -64,19 +61,26 @@ This project introduces an efficient approach to video segmentation aimed at sum
 5. **Seam Detection**: Leveraging the successor score and KNN for detecting "trending" seams presents a novel way of identifying key moments without needing explicit object recognition or manual labeling.
 6. **Adaptive System**: The combination of dynamic thresholds and successor scores allows the system to adapt to different videos and changes within a single video.
 
-## Source 
-- Files with main methods (`scripts/`):
-- Files with utility functions and maintenance scripts (`processing/`):
+## File Structure and Description
+- Sample data (`dataset/`):
+- Examples and walk throughs (`notebooks/`)
+- Expected outputs from `scripts/` (`plots/`)
+- Processing or maintainance scripts (`processing/`)
+- Source code, scripts containing main project code (`scripts/`)
+
 ## Methods & Examples (`notebooks/`)
 - Sample data for testing (`notebooks/`):
-    - Examples to test locally or with a cloud notebook:
+    - Process demonstration and performance evaluations:
+        - `EDA.ipynb`
         - `Example1.ipynb`
-## Configuration and Setup
-Contains sample videos, keyframes, and embeddings.
-- Sample data for testing (`datasets/`):
-    - `originalvideos/`
-    - `originalkeyframes/`
-    - `originalembeddings/`
+        - `Example2.ipynb`
+        - `Results EDA.ipynb`
+    - Examples to test locally or with a cloud notebook:
+      - `video_encode_pipeline.ipynb`
+### Relevant Tools and Libraries
+- [clip-video-encode](https://github.com/iejMac/clip-video-encode/blob/main/clip_video_encode/clip_video_encode.py)
+- [video2dataset](https://github.com/iejMac/video2dataset/blob/main/requirements.txt)
+
 ## References
 - Su, J., Yin, R., Zhang, S., & Luo, J. (2023). Motion-state Alignment for Video Semantic Segmentation.
 - Cho, S., Kim, W. J., Cho, M., Lee, S., Lee, M., Park, C., & Lee, S. (2022). Pixel-Level Equalized Matching for Video Object Segmentation
