@@ -31,7 +31,7 @@ def main():
       with open(f"{directory}/dataset_requirements.json", "w") as f:
             json.dump(dataset_requirements, f)
       df = pd.DataFrame(dataset_requirements['data'])
-      df.to_csv(f"{directory}/dataset_requirements.csv", index=False)
+      df.to_parquet(f"{directory}/dataset_requirements.parquet", index=False)
 
     def load_dataset_requirements(directory):
         with open(f"{directory}/dataset_requirements.json", "r") as f:
@@ -104,20 +104,23 @@ def main():
 
     def run_video2dataset_with_yt_dlp(directory, output):
         os.makedirs(output, exist_ok=True)
-        url_list = f'{directory}/dataset_requirements.csv'
+        url_list = f'{directory}/dataset_requirements.parquet'
         print(f"Reading URLs from: {url_list}")
-        df = pd.read_csv(url_list)
+        df = pd.read_parquet(url_list)
         for idx, row in df.iterrows():
             print(f"Processing video {idx+1}: {row['url']}")
             command = [
                 'video2dataset',
+                '--input_format', 'parquet',
                 '--url_list', url_list,
+                '--encode_formats', '{"video": "mp4", "audio": "m4a"}',
                 '--output_folder', output,
-                '--config', '/content/config.yaml']
+                '--config', '/content/config.yaml'
+            ]
             result = subprocess.run(command, capture_output=True, text=True)
             print("Return code:", result.returncode)
             print("STDOUT:", result.stdout)
-            print("STDERR:", result.stderr)
+
 
     prepare_dataset_requirements(selected_config["directory"]) 
     run_video2dataset_with_yt_dlp(selected_config["directory"], selected_config["original_videos"])
