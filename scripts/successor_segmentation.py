@@ -8,7 +8,6 @@ import configparser
 from segment_processing import *
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
-from plotting import annotate_plot
 from load_data import *
 from typing import List, Tuple, Optional, Dict, Union
 import numpy as np
