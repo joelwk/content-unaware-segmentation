@@ -25,9 +25,7 @@ def parse_args():
 args = parse_args()
 
 config = {
-    "local": generate_config("./pipeline_datasets"),
-    "cloud": generate_config("/content/drive/MyDrive/research/pipeline/datasets")
-}
+    "local": generate_config("./datasets")}
 selected_config = config[args.mode]
 
 def clip_encode():

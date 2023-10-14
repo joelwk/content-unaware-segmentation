@@ -83,6 +83,14 @@ class SlidingWindowAnalyzer:
         return calculate_distances_to_centroids(distances, indices)
 
     def calculate_optimal_k(self, embedding_scores, max_iter=1000):
+        """
+        Calculates the optimal value of K for K-Nearest Neighbors (KNN) based on pre-defined distance thresholds.        
+        Notes:
+        - The method iteratively increases K and calculates the average distance and standard deviation of distances to centroids.
+        - If the average distance and standard deviation fall below the set thresholds, the current K is returned as optimal.
+        - If K reaches the length of the embedding_scores, the thresholds are updated and K is reset to 1.
+        - If the maximum number of iterations is reached without finding an optimal K, the method returns K=1.
+        """
         if len(embedding_scores) == 0:
             return None, None, None
         reshaped_scores = embedding_scores.reshape(-1, 1)

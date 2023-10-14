@@ -42,10 +42,10 @@ def create_directories(config):
 def generate_config(base_directory):
     return {
         "directory": base_directory,
-        "original_videos": f"{base_directory}/original_videos",
-        "keyframe_videos": f"{base_directory}/keyframe_videos",
-        "embedding_output": f"{base_directory}/embedding_output",
-        "keyframe_embedding_output": f"{base_directory}/keyframe_embedding_output",
+        "original_videos": f"{base_directory}/originalvideos",
+        "keyframe_videos": f"{base_directory}/keyframes",
+        "embedding_output": f"{base_directory}/originalembeddings",
+        "keyframe_embedding_output": f"{base_directory}/keyframeembeddings",
         "keyframe_parquet": f"{base_directory}/keyframe_video_requirements.parquet",
         "config_yaml": f"{base_directory}/config.yaml"
     }
@@ -76,8 +76,7 @@ def modify_requirements_txt(file_path, target_packages):
 if __name__ == "__main__":
     args = parse_args()
     config = {
-        "local": generate_config("./pipeline_datasets"),
-        "cloud": generate_config("./cloud_pipeline_datasets")  # Update this path as needed
+        "local": generate_config("./datasets")
     }
     selected_config = config[args.mode]
     create_directories(selected_config)
@@ -87,11 +86,17 @@ if __name__ == "__main__":
     target_packages = {
         "pandas": ">=1.1.5,<2",
         "pyarrow": ">=6.0.1,<8",
-        "imageio-ffmpeg": ">=0.4.0,<1"
+        "imageio-ffmpeg": ">=0.4.0,<1",
     }
+
     modify_requirements_txt(f"{video2dataset_path}/requirements.txt", target_packages)
+    
+    # Add the additional package
+    with open(f"{video2dataset_path}/requirements.txt", "a") as f:
+        f.write("imagehash>=4.3.1\n")
+
     install_local_package(video2dataset_path)
-    # Clone and rename clip-video-encode
+
     clip_video_encode_path = clone_repository("https://github.com/iejMac/clip-video-encode.git", "./repos")
     # Use it before renaming
     if safe_delete(clip_video_encode_path):

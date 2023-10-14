@@ -16,9 +16,7 @@ def parse_args():
 
 args = parse_args()
 config = {
-    "local": generate_config("./pipeline_datasets"),
-    "cloud": generate_config("/content/drive/MyDrive/research/pipeline/datasets/")
-}
+    "local": generate_config("./datasets")}
 selected_config = config[args.mode]
 
 def main():
@@ -32,10 +30,6 @@ def main():
             dataset_requirements = {
                 "data": [
                     {"url": "www.youtube.com/watch?v=nXBoOam5xJs", "caption": "The Deadly Portuguese Man O' War"},
-                    {"url": "www.youtube.com/watch?v=yZ57m4uqFtI", "caption": "Baby 5 Color Eggs Song!"},
-                    {"url": "www.youtube.com/watch?v=ND92YNQv0TU", "caption": "Macaque Monkeys at War"},
-                    {"url": "www.youtube.com/watch?v=-tvA3Ezqjl8", "caption": "Top 5 David Attenborough Moments"},
-                    {"url": "www.youtube.com/watch?v=oP2oGREukAE", "caption": "BBC Earth 50 Top Natural History Moments"},
                 ]
             }
             os.makedirs(directory, exist_ok=True)
