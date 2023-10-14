@@ -5,6 +5,7 @@ import glob
 import configparser
 import subprocess
 import argparse
+import shutil
 import ffmpeg
 from pipeline import *
 
@@ -22,20 +23,28 @@ selected_config = config[args.mode]
 
 def main():
 
-    def prepare_dataset_requirements(directory):
-      dataset_requirements = {
-          "data": [
-              {"url": "www.youtube.com/watch?v=nXBoOam5xJs", "caption": "The Deadly Portuguese Man O' War"},
-              {"url": "www.youtube.com/watch?v=ND92YNQv0TU", "caption": "Macaque Monkeys at War "}]}
-      os.makedirs(directory, exist_ok=True)
-      with open(f"{directory}/dataset_requirements.json", "w") as f:
-            json.dump(dataset_requirements, f)
-      df = pd.DataFrame(dataset_requirements['data'])
-      df.to_parquet(f"{directory}/dataset_requirements.parquet", index=False)
+    def prepare_dataset_requirements(directory, external_parquet_path=None):
+        if external_parquet_path:
+            # If an external Parquet file is provided, copy it to the directory
+            shutil.copy(external_parquet_path, f"{directory}/dataset_requirements.parquet")
+        else:
+            # Otherwise, create a new Parquet file from the default JSON data
+            dataset_requirements = {
+                "data": [
+                    {"url": "www.youtube.com/watch?v=nXBoOam5xJs", "caption": "The Deadly Portuguese Man O' War"},
+                    {"url": "www.youtube.com/watch?v=yZ57m4uqFtI", "caption": "Baby 5 Color Eggs Song!"},
+                    {"url": "www.youtube.com/watch?v=ND92YNQv0TU", "caption": "Macaque Monkeys at War"},
+                    {"url": "www.youtube.com/watch?v=-tvA3Ezqjl8", "caption": "Top 5 David Attenborough Moments"},
+                    {"url": "www.youtube.com/watch?v=oP2oGREukAE", "caption": "BBC Earth 50 Top Natural History Moments"},
+                ]
+            }
+            os.makedirs(directory, exist_ok=True)
+            df = pd.DataFrame(dataset_requirements['data'])
+            df.to_parquet(f"{directory}/dataset_requirements.parquet", index=False)
 
     def load_dataset_requirements(directory):
-        with open(f"{directory}/dataset_requirements.json", "r") as f:
-            return json.load(f)
+        # Read from the Parquet file instead of the JSON file
+        return pd.read_parquet(f"{directory}/dataset_requirements.parquet").to_dict(orient='records')
 
     def collect_video_metadata(video_files, output):
         keyframe_video_locs = []
@@ -74,6 +83,7 @@ def main():
                 os.rename(output_file_path, input_file_path)
             except ffmpeg.Error as e:
                 print(f"Failed to re-encode {video_file}. Error: {e.stderr.decode('utf8')}")
+                
     def segment_key_frames_in_directory(directory, output_directory):
         video_files = glob.glob(f"{directory}/**/*.mp4", recursive=True)
         for video_file in video_files:
@@ -97,7 +107,8 @@ def main():
 
     def prepare_clip_encode(directory, output):
         dataset_requirements = load_dataset_requirements(directory)
-        df = pd.DataFrame(dataset_requirements['data'])
+        df = pd.DataFrame(dataset_requirements)
+
         video_files = glob.glob(f"{selected_config['original_videos']}/**/*.mp4", recursive=True)
         keyframe_video_locs, original_video_locs = collect_video_metadata(video_files, output)
         save_metadata_to_parquet(keyframe_video_locs, original_video_locs, selected_config["directory"])
@@ -121,11 +132,12 @@ def main():
             print("Return code:", result.returncode)
             print("STDOUT:", result.stdout)
 
-
-    prepare_dataset_requirements(selected_config["directory"]) 
+    external_parquet_path = "./video_urls.parquet"  # Replace with actual path or None
+    prepare_dataset_requirements(selected_config["directory"], external_parquet_path = None)
     run_video2dataset_with_yt_dlp(selected_config["directory"], selected_config["original_videos"])
     fix_codecs_in_directory(selected_config["original_videos"])
     segment_key_frames_in_directory(selected_config["original_videos"], selected_config["keyframe_videos"])
     prepare_clip_encode(selected_config["directory"], selected_config["keyframe_videos"])
+
 if __name__ == "__main__":
-    main()
+  main()

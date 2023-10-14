@@ -83,10 +83,7 @@ class SlidingWindowAnalyzer:
         return calculate_distances_to_centroids(distances, indices)
 
     def calculate_optimal_k(self, embedding_scores, max_iter=1000):
-        # Determine optimal K for KNN based on distance thresholds - adjust max_iter as needed
-        # Uncomment print statements for debugging or to enable evaluation outputs
         if len(embedding_scores) == 0:
-         #   print("The embedding_scores array is empty. Cannot proceed with KNN.")
             return None, None, None
         reshaped_scores = embedding_scores.reshape(-1, 1)
         self.knn = NearestNeighbors()
@@ -94,17 +91,15 @@ class SlidingWindowAnalyzer:
         K, iteration = 1, 0
         while iteration < max_iter:
             if K >= len(embedding_scores):
-           #     print("Resetting K to 1 and updating thresholds.")
                 self.update_thresholds()
                 K = 1
             _, indices = self.knn.kneighbors(reshaped_scores, n_neighbors=K, return_distance=True)
             distances = self.calculate_distances_to_centroids(embedding_scores, indices)
             avg_distance, std_dev = np.mean(distances), np.std(distances)
-           # print(f"Current K: {K}, Avg distance: {avg_distance}, Std dev: {std_dev}")
+            print(f"Current K: {K}, Avg distance: {avg_distance}, Std dev: {std_dev}")
             self.past_avg_distances.append(avg_distance)
             self.past_std_devs.append(std_dev)
             if avg_distance < self.avg_distance_threshold and std_dev < self.std_dev_threshold:
-              #  print(f"Optimal K found: {K}")
                 return K, self.knn, distances
             K += 1
             iteration += 1
