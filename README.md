@@ -68,12 +68,13 @@ This project introduces an efficient approach to video segmentation aimed at sum
 - `originalvideos/`: Full videos used to create keyframes
 ### `notebooks/`
 - `evaluations/`: Embedding statistics by video
-- `EDA/`: Inital EDA and methods visualized
-- `Example1/`: Embedding surveyor with video 1
-- `Example2/`: Embedding surveyor with video 7
-- `Results EDA/`: Successor segmentation video 1
+- `EDA.ipynb`: Inital EDA and methods visualized
+- `Example1.ipynb`: Embedding surveyor with video 1
+- `Example2.ipynb`: Embedding surveyor with video 7
+- `Results EDA.ipynb`: Successor segmentation video 1
+- `Generative Summarization EDA.ipynb`: Final summarization process - **work in progress**
 ### `pipeline/`
-- `video_segmentation.ipynb`: Google Colab notebook for full video segmentation pipeline.
+- [`video_segmentation.ipynb`](https://colab.research.google.com/drive/1trloS72vEZFpeScW5VwZRsyHC51p2pz1?usp=sharing): Google Colab notebook for full video segmentation pipeline.
 - `pipeline.py`: Setup script for running the pipeline.
 - `clipvideoencode.py`: Script for extracting embeddings from video frames - uses `clip-video-encode` library.
 - `video2dataset.py`: Script for downloading YouTube videos with metadata and extracting keyframes - uses `video2dataset` library.
@@ -84,6 +85,7 @@ This project introduces an efficient approach to video segmentation aimed at sum
 - `original_video_scatter_1.png` & `key_video_scatter_1.png`: Scatter plots for video 1 for original and keyframe embeddings - shows the latent space for each video.
 - `original_video_embeddings_1` & `original_video_embeddings_7`: Visualize the relationship between video frames and embedding values over video duration. Video frames are plotted with associated histograms of average embedding values and successor similarity scores.
 - `keyframe_embeddings_1` & `keyframe_embeddings_7`: Visualize the relationship between keyframes and keyframe embedding values over video duration. Video frames are plotted with associated histograms of average embedding values and successor similarity scores.
+- [Example outputs](https://drive.google.com/drive/folders/17fwh0-5LgjBAuhO6llKCgJYSSLpOX6qo?usp=sharing)
 ### `processing/`
 - `segment_processing.py`: Provides utility functions for video segmentation and keyframe filtering based on metrics like perceptual hashing and Euclidean distances between embeddings. It reads configurable thresholds and uses them to detect new segments in a video, filter out similar keyframes, and calculate distances to centroids.
 ### `scripts/`
