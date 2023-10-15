@@ -30,9 +30,7 @@ This project introduces an efficient approach to video segmentation aimed at sum
   </table>
 </div>
 
-
 ## Summary Review of Process
-
 1. **Download YouTube Video and Extract Keyframes Using video2dataset**
     - `video2dataset` employs `yt-dl` for video downloading and `ffmpeg` for keyframe extraction.
     - This step yields: original videos, keyframes, and the YouTube metadata JSON.
@@ -47,11 +45,11 @@ This project introduces an efficient approach to video segmentation aimed at sum
     - After determining optimal values, the script is configured to produce image and video keyframes.
     - The primary output consists of 2-15-second clips, each containing 2-4 keyframes most representative of the clip's content.
 
-<summary>Key Terms</summary>
+    <summary>Key Terms</summary>
 
-  - **Distance Metrics**: Uses Euclidean distance to measure the similarity between embeddings of adjacent frames.
-  - **Successor Values**: The Euclidean distance of the current frame to its successor frame - used to qualify new segments.
-</details>
+      - **Distance Metrics**: Uses Euclidean distance to measure the similarity between embeddings of adjacent frames.
+      - **Successor Values**: The Euclidean distance of the current frame to its successor frame - used to qualify new segments.
+    </details>
 
 ## Key features:
 1. **Dynamic Thresholds**: Adapts to varying video content using a rolling average and standard deviation to adjust the threshold.
@@ -61,8 +59,7 @@ This project introduces an efficient approach to video segmentation aimed at sum
 5. **Seam Detection**: Leveraging the successor score and KNN for detecting "trending" seams presents a novel way of identifying key moments without needing explicit object recognition or manual labeling.
 6. **Adaptive System**: The combination of dynamic thresholds and successor scores allows the system to adapt to different videos and changes within a single video.
 
-## File Structure and Description
-
+## File Structure and Descriptions
 ### `dataset/`
 - `evaluations/`: Embedding summary statistics by video
 - `keyframeembeddings/`: Keyframe embeddings
@@ -91,13 +88,11 @@ This project introduces an efficient approach to video segmentation aimed at sum
 - `segment_processing.py`: Provides utility functions for video segmentation and keyframe filtering based on metrics like perceptual hashing and Euclidean distances between embeddings. It reads configurable thresholds and uses them to detect new segments in a video, filter out similar keyframes, and calculate distances to centroids.
 ### `scripts/`
 - `embedding_surveyor.py`: The SlidingWindowAnalyzer class in Python is designed for video segmentation and keyframe analysis. It uses a sliding window approach to analyze video embeddings, employing algorithms like K-Nearest Neighbors (KNN) and t-SNE for clustering and visualization. The class also dynamically updates distance thresholds and leverages various utility functions for plotting and threshold management tasks.
-
 - `successor_segmentation.py`: This file contains the SegmentSuccessorAnalyzer class, designed for video keyframe analysis and segmentation. It operates on pre-computed video embeddings and uses configurable thresholds for segment identification. The class also incorporates optional maximum segment duration constraints and saves keyframes and their metadata for further analysis. It is part of the pipeline that can be run on multiple videos, and it leverages utility functions for tasks like annotation and plotting.
-
 - `fold_seams.py`: The primary function in this file is `segment_video_using_keyframes_and_embeddings` and is designed to segment a video based on keyframe timestamps (obtained from `successor_segmentation.py`). It uses FFmpeg for the actual video cutting. The function also incorporates a tolerance level that can be adjusted to fine-tune each segment's start and end times. This tolerance is mainly used when the segmentation is based on keyframes so that each segment's start and end times are not too close to the keyframe timestamps.
 
 
-## Relevant Literature and Citations References
+## Relevant Literature and Citations
 - Su, J., Yin, R., Zhang, S., & Luo, J. (2023). Motion-state Alignment for Video Semantic Segmentation.
 - Cho, S., Kim, W. J., Cho, M., Lee, S., Lee, M., Park, C., & Lee, S. (2022). Pixel-Level Equalized Matching for Video Object Segmentation.
 - Han, Z., He, X., Tang, M., & Lv, Y. (2021). Video Similarity and Alignment Learning on Partial Video Copy Detection.
