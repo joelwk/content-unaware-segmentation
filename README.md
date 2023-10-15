@@ -39,50 +39,80 @@ This project introduces an efficient approach to video segmentation aimed at sum
 
 2. **Convert Original Frames and Keyframes to Numpy Array**
     - The original frames and keyframes are processed via `clip-video-encode` to generate their embedding vectors.
-    - These vectors are created using a pretrained `laion2b_s34b_b79k ViT-B-32` model.
-    - The embeddings act as a compact representation of the frames and keyframes, encapsulating essential visual features.
+    - These vectors are created using a pre-trained `laion2b_s34b_b79k ViT-B-32` model.
+    - The embeddings are a compact representation of the frames and keyframes, encapsulating essential visual features.
 
 3. **Analysis, Visualization, and Fine-tuning**
-    - A sliding window method and k-NN are utilized to identify segments where the successor value either crosses a specific threshold or shows a unique pattern.
-    - After determining optimal values, the script is configured and run to produce image and video keyframes.
-    - The primary output consists of 2-15 second clips, each containing 2-4 keyframes that are most representative of the clip's content.
+    - A sliding window method and k-NN are used to identify segments where the successor value crosses a specific threshold or shows a unique pattern.
+    - After determining optimal values, the script is configured to produce image and video keyframes.
+    - The primary output consists of 2-15-second clips, each containing 2-4 keyframes most representative of the clip's content.
 
 <summary>Key Terms</summary>
 
   - **Distance Metrics**: Uses Euclidean distance to measure the similarity between embeddings of adjacent frames.
-  - **Successor Values**: The euclidean distance of the current frame to its successor frame - used to qualify new segments.
+  - **Successor Values**: The Euclidean distance of the current frame to its successor frame - used to qualify new segments.
 </details>
 
 ## Key features:
 1. **Dynamic Thresholds**: Adapts to varying video content using a rolling average and standard deviation to adjust the threshold.
 2. **Embedding Semantics**: Using semantic embeddings allows for a rich representation of content, enabling the system to identify better segments where a significant change occurs.
-3. **Successor Score**: The primary heuristic in keyframe detection through the Euclidean distance between successive frame embeddings.
+3. **Successor Score**: The primary heuristic in keyframe detection is through the Euclidean distance between successive frame embeddings.
 4. **Embedding Surveyor**: Leverages K-Nearest Neighbors (KNN) to fine-tune the dynamic thresholds, providing a second layer of adaptability and increasing segmentation accuracy.
 5. **Seam Detection**: Leveraging the successor score and KNN for detecting "trending" seams presents a novel way of identifying key moments without needing explicit object recognition or manual labeling.
 6. **Adaptive System**: The combination of dynamic thresholds and successor scores allows the system to adapt to different videos and changes within a single video.
 
 ## File Structure and Description
-- Sample data (`dataset/`):
-- Examples and walk throughs (`notebooks/`)
-- Expected outputs from `scripts/` (`plots/`)
-- Processing or maintainance scripts (`processing/`)
-- Source code, scripts containing main project code (`scripts/`)
 
-## Methods & Examples (`notebooks/`)
-- Sample data for testing (`notebooks/`):
-    - Process demonstration and performance evaluations:
-        - `EDA.ipynb`
-        - `Example1.ipynb`
-        - `Example2.ipynb`
-        - `Results EDA.ipynb`
-    - Examples to test locally or with a cloud notebook:
-      - `video_encode_pipeline.ipynb`
+### `dataset/`
+- `evaluations/`: Embedding summary statistics by video
+- `keyframeembeddings/`: Keyframe embeddings
+- `keyframes/`: Inital video keyframes, reduced FPS version of original video 
+- `originalembeddings/`: Full video embeddings
+- `originalvideos/`: Full videos used to create keyframes
+### `notebooks/`
+- `evaluations/`: Embedding statistics by video
+- `EDA/`: Inital EDA and methods visualized
+- `Example1/`: Embedding surveyor with video 1
+- `Example2/`: Embedding surveyor with video 7
+- `Results EDA/`: Successor segmentation video 1
+### `pipeline/`
+- `video_segmentation.ipynb`: Google Colab notebook for full video segmentation pipeline.
+- `pipeline.py`: Setup script for running the pipeline.
+- `clipvideoencode.py`: Script for extracting embeddings from video frames - uses `clip-video-encode` library.
+- `video2dataset.py`: Script for downloading YouTube videos with metadata and extracting keyframes - uses `video2dataset` library.
+- `segment_averaging.py`: Script for calculating average clip embedding for each cut segment.
+- `move_and_group.py` & `rename_and_move_files.py`: Utility scripts for organizing files.
+### `plots/`
+- `1.png through 8.png`: Grid plots of the keyframes for each video.
+- `original_video_scatter_1.png` & `key_video_scatter_1.png`: Scatter plots for video 1 for original and keyframe embeddings - shows the latent space for each video.
+- `original_video_embeddings_1` & `original_video_embeddings_7`: Visualize the relationship between video frames and embedding values over video duration. Video frames are plotted with associated histograms of average embedding values and successor similarity scores.
+- `keyframe_embeddings_1` & `keyframe_embeddings_7`: Visualize the relationship between keyframes and keyframe embedding values over video duration. Video frames are plotted with associated histograms of average embedding values and successor similarity scores.
+### `processing/`
+- `segment_processing.py`: Provides utility functions for video segmentation and keyframe filtering based on metrics like perceptual hashing and Euclidean distances between embeddings. It reads configurable thresholds and uses them to detect new segments in a video, filter out similar keyframes, and calculate distances to centroids.
+### `scripts/`
+- `embedding_surveyor.py`: The SlidingWindowAnalyzer class in Python is designed for video segmentation and keyframe analysis. It uses a sliding window approach to analyze video embeddings, employing algorithms like K-Nearest Neighbors (KNN) and t-SNE for clustering and visualization. The class also dynamically updates distance thresholds and leverages various utility functions for plotting and threshold management tasks.
+
+- `successor_segmentation.py`: This file contains the SegmentSuccessorAnalyzer class, designed for video keyframe analysis and segmentation. It operates on pre-computed video embeddings and uses configurable thresholds for segment identification. The class also incorporates optional maximum segment duration constraints and saves keyframes and their metadata for further analysis. It is part of the pipeline that can be run on multiple videos, and it leverages utility functions for tasks like annotation and plotting.
+
+- `fold_seams.py`: The primary function in this file is `segment_video_using_keyframes_and_embeddings` and is designed to segment a video based on keyframe timestamps (obtained from `successor_segmentation.py`). It uses FFmpeg for the actual video cutting. The function also incorporates a tolerance level that can be adjusted to fine-tune each segment's start and end times. This tolerance is mainly used when the segmentation is based on keyframes so that each segment's start and end times are not too close to the keyframe timestamps.
+
+
+## Relevant Literature and Citations References
+- Su, J., Yin, R., Zhang, S., & Luo, J. (2023). Motion-state Alignment for Video Semantic Segmentation.
+- Cho, S., Kim, W. J., Cho, M., Lee, S., Lee, M., Park, C., & Lee, S. (2022). Pixel-Level Equalized Matching for Video Object Segmentation.
+- Han, Z., He, X., Tang, M., & Lv, Y. (2021). Video Similarity and Alignment Learning on Partial Video Copy Detection.
+- Cho, D., Hong, S., Kang, S., & Kim, J. (2019). Key Instance Selection for Unsupervised Video Object Segmentation.
+- Foster, D. (n.d.-b). Generative Deep Learning, 2nd Edition. O'Reilly Online Learning. [O'Reilly Online Learning](https://learning.oreilly.com/library/view/generative-deep-learning/9781098134174/ch03.html)
+
 ### Relevant Tools and Libraries
 - [clip-video-encode](https://github.com/iejMac/clip-video-encode/blob/main/clip_video_encode/clip_video_encode.py)
-- [video2dataset](https://github.com/iejMac/video2dataset/blob/main/requirements.txt)
 
-## References
-- Su, J., Yin, R., Zhang, S., & Luo, J. (2023). Motion-state Alignment for Video Semantic Segmentation.
-- Cho, S., Kim, W. J., Cho, M., Lee, S., Lee, M., Park, C., & Lee, S. (2022). Pixel-Level Equalized Matching for Video Object Segmentation
-- Han, Z., He, X., Tang, M., & Lv, Y. (2021). Video Similarity and Alignment Learning on Partial Video Copy Detection
-- Cho, D., Hong, S., Kang, S., & Kim, J. (2019). Key Instance Selection for Unsupervised Video Object Segmentation
+```bibtex
+@misc{kilian-2023-video2dataset,
+  author = {Maciej Kilian, Romain Beaumont, Daniel Mendelevitch, Sumith Kulal, Andreas Blattmann},
+  title = {video2dataset: Easily turn large sets of video urls to a video dataset},
+  year = {2023},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\\url{https://github.com/iejMac/video2dataset}}
+}
