@@ -85,7 +85,7 @@ This project introduces an efficient approach to video segmentation aimed at sum
 - `original_video_scatter_1.png` & `key_video_scatter_1.png`: Scatter plots for video 1 for original and keyframe embeddings - shows the latent space for each video.
 - `original_video_embeddings_1` & `original_video_embeddings_7`: Visualize the relationship between video frames and embedding values over video duration. Video frames are plotted with associated histograms of average embedding values and successor similarity scores.
 - `keyframe_embeddings_1` & `keyframe_embeddings_7`: Visualize the relationship between keyframes and keyframe embedding values over video duration. Video frames are plotted with associated histograms of average embedding values and successor similarity scores.
-- [Example outputs](https://drive.google.com/drive/folders/17fwh0-5LgjBAuhO6llKCgJYSSLpOX6qo?usp=sharing)
+- [Example outputs](https://drive.google.com/drive/folders/1Z2gldAViNL44Y7j2U893d_2wLPuvvEKT?usp=sharing)
 ### `processing/`
 - `segment_processing.py`: Provides utility functions for video segmentation and keyframe filtering based on metrics like perceptual hashing and Euclidean distances between embeddings. It reads configurable thresholds and uses them to detect new segments in a video, filter out similar keyframes, and calculate distances to centroids.
 ### `scripts/`
