@@ -81,6 +81,16 @@ def calculate_video_frame_phash_similarity(frame1: np.ndarray,
 def get_segmented_and_filtered_frames(video_files: List[str], keyframe_files: List[str],
                                       embedding_values: List[np.ndarray], 
                                       thresholds: Dict[str, Optional[float]]) -> Tuple[List[Tuple[np.ndarray, np.ndarray]], List[float]]:
+    """
+    Extracts keyframes from the video and pairs them with corresponding embeddings, then applies perceptual hashing for filtering.
+    Parameters:
+        video_files (List[str]): List of paths to the original video files.
+        keyframe_files (List[str]): List of paths to the video files containing keyframes.
+        embedding_values (List[np.ndarray]): List of embeddings for each keyframe.
+        thresholds (Dict[str, Optional[float]]): A dictionary containing threshold values, e.g., for perceptual hashing.
+    Returns:
+        Tuple[List[Tuple[np.ndarray, np.ndarray]], List[float]]: A list of tuples where each tuple contains a frame and its corresponding embedding, and a list of timestamps for each keyframe.
+    """
     frame_embedding_pairs = []
     timestamps = []
     total_duration = get_video_duration(video_files)
@@ -95,13 +105,13 @@ def get_segmented_and_filtered_frames(video_files: List[str], keyframe_files: Li
             frame_embedding_pairs.append((frame, embedding))
             timestamps.append(timestamp)
         vid_cap.release()
-
     if thresholds['phash_threshold'] is not None:
         frames = [frame for frame, _ in frame_embedding_pairs]
         filtered_timestamps = filter_keyframes_based_on_phash(frames, timestamps, thresholds)
         frame_embedding_pairs = [(frame, emb) for frame, emb, ts in zip(frames, embedding_values, timestamps) if ts in filtered_timestamps]
         timestamps = [ts for ts in timestamps if ts in filtered_timestamps]
     return frame_embedding_pairs, timestamps
+
 
 
 def get_segmented_frames_and_embeddings(video_files: List[str], 
@@ -111,14 +121,12 @@ def get_segmented_frames_and_embeddings(video_files: List[str],
                                         end_idx: int) -> Tuple[List[Tuple[np.ndarray, np.ndarray, float]], np.ndarray]:
     """
     Extracts the subset of frames and embeddings for a given window.
-    
     Parameters:
         video_files (List[str]): List of paths to video files.
         embedding_values (List[np.ndarray]): List of embeddings.
         total_duration (float): Total duration of the video.
         start_idx (int): Starting index for the segment.
         end_idx (int): Ending index for the segment.
-        
     Returns:
         Tuple[List[Tuple[np.ndarray, np.ndarray, float]], np.ndarray]: List of tuples containing frame, embedding, and timestamp, and an array of segmented embeddings.
     """
@@ -139,19 +147,15 @@ def get_segmented_frames_and_embeddings(video_files: List[str],
         # Validate start and end indices
         if start_idx >= total_frames or end_idx > total_frames:
             return None, None
-        
         for emb_idx in range(start_idx, end_idx):
             if emb_idx >= len(embedding_values):
                 break
-            
             vid_cap.set(cv2.CAP_PROP_POS_FRAMES, emb_idx)
             success, frame = vid_cap.read()
             if not success:
                 break
-            
             timestamp = (total_duration / len(embedding_values)) * emb_idx
             frame_embedding_pairs.append((frame, embedding_values[emb_idx], timestamp))
             segmented_embeddings.append(embedding_values[emb_idx])
-        
         vid_cap.release()
     return frame_embedding_pairs, np.array(segmented_embeddings)

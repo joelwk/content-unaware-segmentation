@@ -77,8 +77,8 @@ def main():
                 "videoID": video_id,
                 "duration": duration,
             })
-
         return keyframe_video_locs, original_video_locs
+
     def fix_codecs_in_directory(directory):
         video_files = glob.glob(f"{directory}/**/*.mp4", recursive=True)
         for video_file in video_files:
@@ -116,6 +116,8 @@ def main():
     def save_metadata_to_parquet(keyframe_video_locs, original_video_locs, directory):
         keyframe_video_df = pd.DataFrame(keyframe_video_locs)
         original_video_df = pd.DataFrame(original_video_locs)
+        keyframe_video_df['duration'] = keyframe_video_df['duration'].astype(float)
+        original_video_df['duration'] = original_video_df['duration'].astype(float)
         keyframe_video_df.to_parquet(f'{directory}/keyframe_video_requirements.parquet', index=False)
         original_video_df.to_parquet(f'{directory}/original_video_requirements.parquet', index=False)
 
@@ -146,8 +148,8 @@ def main():
             print("Return code:", result.returncode)
             print("STDOUT:", result.stdout)
 
-    external_parquet_path = "./video_urls.parquet"  # Replace with actual path or None
-    prepare_dataset_requirements(selected_config["directory"], external_parquet_path = None)
+    external_parquet_path = "./youtube.parquet"  # Replace with actual path or None
+    prepare_dataset_requirements(selected_config["directory"], external_parquet_path = external_parquet_path)
     run_video2dataset_with_yt_dlp(selected_config["directory"], selected_config["original_videos"])
     fix_codecs_in_directory(selected_config["original_videos"])
     segment_key_frames_in_directory(selected_config["original_videos"], selected_config["keyframe_videos"])

@@ -13,6 +13,7 @@ from typing import List, Tuple, Optional, Dict, Union
 import numpy as np
 from PIL import Image
 from imagehash import phash
+from matplotlib.patches import Rectangle
 
 class SegmentSuccessorAnalyzer:
     def __init__(self, total_duration: float, embedding_values: np.ndarray, thresholds: Dict[str, Optional[float]],
@@ -81,46 +82,43 @@ class SegmentSuccessorAnalyzer:
             print("No new segments found. Exiting save_keyframes.")
             return
         saved_keyframes = set()
-        for segment_idx in new_segments:
-            if segment_idx not in saved_keyframes:
-                frame, _ = frame_embedding_pairs[segment_idx]
-                save_path = os.path.join(save_dir, f'keyframe_{segment_idx}.png')
-                cv2.imwrite(save_path, frame)
-                saved_keyframes.add(segment_idx)
-
-        # Plot key frames widist dynamic sizing and save them
-        num_keyframes = len(new_segments)
+        num_frames = len(frame_embedding_pairs)
         num_cols = 4
-        num_rows = int(np.ceil(num_keyframes / num_cols))
+        num_rows = int(np.ceil(num_frames / num_cols))
         if num_rows <= 0 or num_cols <= 0:
             print("Invalid grid dimensions. Skipping grid plotting.")
             return
         fig, axes = plt.subplots(num_rows, num_cols, figsize=(4 * num_cols, 4 * num_rows))
-        if num_keyframes == 1:
+        if num_frames == 1:
             axes = np.array([[axes]])
         flat_axes = axes.flatten()
         keyframe_data = {}
-        for i, ax in enumerate(flat_axes[:num_keyframes]):
-            ax.imshow(cv2.cvtColor(frame_embedding_pairs[new_segments[i]][0], cv2.COLOR_BGR2RGB))
-            annotate_plot(ax,
-                        idx=new_segments[i],
-                        successor_sim=successor_distance,
-                        distances=distances,
-                        global_frame_start_idx=0,
-                        window_idx=i,
-                        segment_label=f"Fame{i}",
-                        timestamp=timestamps[new_segments[i]]
-                        )
-            # Store the index and time frame for this keyframe
-            keyframe_data[i] = {
-                'index': new_segments[i],
-                'time_frame': timestamps[new_segments[i]]
-            }
-        for i in range(num_keyframes, len(flat_axes)):
+        segment_counter = 0
+        individual_keyframe_counter = 0
+        segment_start_idx = 0
+        for i, ax in enumerate(flat_axes[:num_frames]):
+            frame, _ = frame_embedding_pairs[i]
+            ax.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            if i - 1 in new_segments:
+                keyframe_data[i] = {
+                    'index': i,
+                    'time_frame': timestamps[i]
+                }
+                segment_start_idx = i
+                segment_counter += 1
+            annotate_plot(ax, idx=i, successor_sim=successor_distance, distances=distances, 
+                          global_frame_start_idx=0, window_idx=i, 
+                          segment_label=f"Segment {segment_counter}", timestamp=timestamps[i])
+            individual_keyframe_path = os.path.join(save_dir, f'individual_keyframe_{individual_keyframe_counter}.png')
+            individual_keyframe_counter += 1
+            cv2.imwrite(individual_keyframe_path, frame)
+        
+        for i in range(num_frames, len(flat_axes)):
             flat_axes[i].axis('off')
+
         plt_path = os.path.join(save_dir, 'keyframes_grid.png')
         plt.savefig(plt_path)
-        # Save keyframe data
+
         json_path = os.path.join(save_dir, 'keyframe_data.json')
         with open(json_path, 'w') as f:
             json.dump(keyframe_data, f)
@@ -133,8 +131,13 @@ def annotate_plot(ax, idx, successor_sim, distances, global_frame_start_idx, win
     if timestamp is not None:
         title_elements.append(f"Timestamp: {timestamp}")
     ax.set_title("\n".join(title_elements), fontsize=8, pad=6)
-    legend_elements = [Line2D([0], [0], marker='o', color='w', label=f"FrameIndex {global_frame_start_idx + idx}", markersize=8)]
+    legend_elements = [Line2D([0], [0], marker='o', color='w', label=f"Frame Index {global_frame_start_idx + idx}", markersize=8)]
     ax.legend(handles=legend_elements, fontsize=6)
+    
+def is_clear_image(frame, lower_bound=10, upper_bound=245):
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    mean_intensity = np.mean(gray_frame)
+    return lower_bound < mean_intensity < upper_bound
 
 def run_analysis(analyzer_class, specific_videos=None):
     thresholds = read_thresholds_config()  
