@@ -8,6 +8,7 @@ import argparse
 import shutil
 import ffmpeg
 from pipeline import *
+import cv2
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Pipeline Configuration')
@@ -29,7 +30,7 @@ def main():
             # Otherwise, create a new Parquet file from the default JSON data
             dataset_requirements = {
                 "data": [
-                    {"url": "www.youtube.com/watch?v=nXBoOam5xJs", "caption": "The Deadly Portuguese Man O' War"},
+                    {"url": "www.youtube.com/watch?v=nXBoOam5xJs", "caption": "The Deadly Portuguese Man O' War"}
                 ]
             }
             os.makedirs(directory, exist_ok=True)
@@ -39,6 +40,12 @@ def main():
     def load_dataset_requirements(directory):
         # Read from the Parquet file instead of the JSON file
         return pd.read_parquet(f"{directory}/dataset_requirements.parquet").to_dict(orient='records')
+
+    def get_video_duration(video_file):
+        vid_cap = cv2.VideoCapture(video_file)
+        total_duration = int(vid_cap.get(cv2.CAP_PROP_FRAME_COUNT)) / int(vid_cap.get(cv2.CAP_PROP_FPS))
+        vid_cap.release()
+        return total_duration
 
     def collect_video_metadata(video_files, output):
         keyframe_video_locs = []
@@ -51,8 +58,15 @@ def main():
                 continue
             with open(json_meta_path, 'r') as f:
                 metadata = json.load(f)
+            
             print(f"Loaded metadata for {video_id}: {metadata}")
-            duration = metadata['video_metadata']['streams'][0]['duration']
+            
+            # Fallback to get_video_duration if 'duration' is not available in JSON metadata
+            duration = metadata.get('video_metadata', {}).get('streams', [{}])[0].get('duration', None)
+            if duration is None:
+                print(f"Duration not found in metadata. Calculating duration for {video_id}.")
+                duration = get_video_duration(video_file)
+            
             keyframe_video_locs.append({
                 "videoLoc": f"{output}/{video_id}_key_frames.mp4",
                 "videoID": video_id,
@@ -63,6 +77,7 @@ def main():
                 "videoID": video_id,
                 "duration": duration,
             })
+
         return keyframe_video_locs, original_video_locs
     def fix_codecs_in_directory(directory):
         video_files = glob.glob(f"{directory}/**/*.mp4", recursive=True)
@@ -71,13 +86,18 @@ def main():
             input_file_path = video_file 
             output_file_path = os.path.join(directory, f"fixed_{video_id}.mp4")
             try:
+                # The next line assumes that ffmpeg has an 'input' function. If not, AttributeError will be caught.
                 ffmpeg.input(input_file_path).output(output_file_path, vcodec='libx264', strict='-2', loglevel="quiet").overwrite_output().run(capture_stdout=True, capture_stderr=True)
                 print(f"Successfully re-encoded {video_file}")
                 os.remove(input_file_path)
                 os.rename(output_file_path, input_file_path)
-            except ffmpeg.Error as e:
-                print(f"Failed to re-encode {video_file}. Error: {e.stderr.decode('utf8')}")
-                
+            except AttributeError as e:
+                # Handles cases where ffmpeg doesn't have 'input' or 'Error' attributes
+                print(f"AttributeError: {e}. FFMPEG might not be correctly installed or imported.")
+            except Exception as e:  
+                # General Exception to catch all other types of exceptions
+                print(f"An unexpected error occurred: {e}")
+
     def segment_key_frames_in_directory(directory, output_directory):
         video_files = glob.glob(f"{directory}/**/*.mp4", recursive=True)
         for video_file in video_files:

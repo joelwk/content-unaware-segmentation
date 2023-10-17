@@ -40,8 +40,16 @@ class SegmentSuccessorAnalyzer:
         # Use stored thresholds if none are provided
         thresholds = thresholds or self.thresholds
         frame_embedding_pairs, timestamps = get_segmented_and_filtered_frames(video_files, keyframe_files,self.embedding_values, thresholds)
-        temporal_embeddings = np.array([emb for _, emb in frame_embedding_pairs])
-        distances = np.linalg.norm(temporal_embeddings[1:] - temporal_embeddings[:-1], axis=1)
+        # Check for edge cases
+        if len(frame_embedding_pairs) < 2:
+            print(f"Insufficient number of frame embeddings for {video_files}. Skipping analysis.")
+            return [], []
+        try:
+            temporal_embeddings = np.array([emb for _, emb in frame_embedding_pairs])
+            distances = np.linalg.norm(temporal_embeddings[1:] - temporal_embeddings[:-1], axis=1)
+        except AxisError as e:
+            print(f"An AxisError occurred while processing {video_files}: {e}. Skipping analysis.")
+            return [], []
         successor_distance = calculate_successor_distance(self.embedding_values)
         initial_new_segments = check_for_new_segment(distances, successor_distance, thresholds)
         new_segments = self.calculate_new_segments(initial_new_segments, timestamps)
@@ -69,6 +77,9 @@ class SegmentSuccessorAnalyzer:
         return intervening_frames[0]
 
     def save_keyframes(self, frame_embedding_pairs, new_segments, distances, successor_distance, timestamps, save_dir):
+        if not new_segments:
+            print("No new segments found. Exiting save_keyframes.")
+            return
         saved_keyframes = set()
         for segment_idx in new_segments:
             if segment_idx not in saved_keyframes:
@@ -81,6 +92,9 @@ class SegmentSuccessorAnalyzer:
         num_keyframes = len(new_segments)
         num_cols = 4
         num_rows = int(np.ceil(num_keyframes / num_cols))
+        if num_rows <= 0 or num_cols <= 0:
+            print("Invalid grid dimensions. Skipping grid plotting.")
+            return
         fig, axes = plt.subplots(num_rows, num_cols, figsize=(4 * num_cols, 4 * num_rows))
         if num_keyframes == 1:
             axes = np.array([[axes]])
@@ -129,9 +143,15 @@ def run_analysis(analyzer_class, specific_videos=None):
     if specific_videos is not None:
         video_ids = [vid for vid in video_ids if vid in specific_videos]
     for video in video_ids:
+      
         video_files = load_video_files(video, params)
+        if not video_files:
+            print(f"No video files found for video: {video}. Skipping analysis.")
+            continue
+        
         key_video_files = load_key_video_files(video, params)
         keyframe_embedding_files = load_keyframe_embedding_files(video, params)
+        
         embedding_values = load_embedding_values(keyframe_embedding_files)
         total_duration = get_video_duration(video_files)
         save_dir = f"./output/keyframes/{video}"

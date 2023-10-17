@@ -102,9 +102,13 @@ def setup_for_video(vid, params, thresholds):
     embedding_values = load_embedding_values(embedding_files)
     clip_output = f"./output/cut_segments/{vid}"
     os.makedirs(clip_output, exist_ok=True)
-    json_path = f"./output/keyframes/{vid}/keyframe_data.json"
+    json_path = os.path.join(".", "output", "keyframes", str(vid), "keyframe_data.json")
+    if not os.path.exists(json_path):
+        print(f"No keyframe_data.json found for video id {vid}. Skipping.")
+        return
     with open(json_path, 'r') as f:
         keyframe_data = json.load(f)
+
     # Extract timestamps from the keyframe_data
     keyframe_timestamps = [data['time_frame'] for data in keyframe_data.values()]
     # Using the union of timestamps to segment video

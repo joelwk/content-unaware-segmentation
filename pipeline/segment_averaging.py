@@ -36,17 +36,26 @@ def process_videos_and_metadata(dataset_folder, emb_folder):
     for sub_folder in glob.glob(os.path.join(dataset_folder, '*')):
         video_files = glob.glob(os.path.join(sub_folder, '*.mp4'))
         clips = []
+        new_id = 0  # Initialize separate ID tracker
         for index, video_file_path in enumerate(video_files):
             duration = get_video_duration(video_file_path)
             if duration is None:
                 continue
             metadata = {
-                "videoID": str(index),
+                "videoID": str(new_id),
                 "videoLoc": video_file_path,
                 "duration": duration
             }
             clips.append(metadata)
+            new_id += 1  # Increment ID tracker
+
         clips_df = pd.DataFrame(clips)
+        
+        # Check for empty DataFrame and skip if necessary
+        if clips_df.empty:
+            print(f"No clips found for {sub_folder}. Skipping.")
+            continue
+
         updated_parquet = os.path.join(sub_folder, '00000.parquet')
         if not os.path.exists(updated_parquet):
             clips_df.to_parquet(updated_parquet, index=False)
@@ -56,8 +65,12 @@ def process_videos_and_metadata(dataset_folder, emb_folder):
         for index, row in clips_df.iterrows():
             emb_file_path = os.path.join(emb_folder, f"{str(index)}.npy")
             json_file_path = os.path.join(emb_folder, f"{str(index)}.json")
+            
+            # Check for existing embedding files
             if not os.path.exists(emb_file_path):
+                print(f"No embedding found for video {str(index)}. Skipping.")
                 continue
+                
             average_embedding = get_average_embedding(emb_file_path)
             average_embeddings[f"{str(index)}.mp4"] = average_embedding
             

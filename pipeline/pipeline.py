@@ -90,18 +90,16 @@ if __name__ == "__main__":
     }
 
     modify_requirements_txt(f"{video2dataset_path}/requirements.txt", target_packages)
-    
-    # Add the additional package
     with open(f"{video2dataset_path}/requirements.txt", "a") as f:
         f.write("imagehash>=4.3.1\n")
-
     install_local_package(video2dataset_path)
-
     clip_video_encode_path = clone_repository("https://github.com/iejMac/clip-video-encode.git", "./repos")
-    # Use it before renaming
     if safe_delete(clip_video_encode_path):
         clip_video_encode_path = clone_repository("https://github.com/iejMac/clip-video-encode.git", "./repos")
         new_path = "./repos/clipencode"
-        shutil.move(clip_video_encode_path, new_path)
+        if os.path.exists(new_path):
+            print(f"Path {new_path} already exists, skipping the move operation.")
+        else:
+            shutil.move(clip_video_encode_path, new_path)
         with open("clipencode_path.txt", "w") as f:
-            f.write(new_path)  # Write the new path to the file
+            f.write(new_path)  
