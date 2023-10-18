@@ -23,9 +23,14 @@ def load_embedding_files(vid, params):
 
 def load_keyframe_embedding_files(vid, params):
     return sorted(glob.glob(f"{params['embeddings']}/{vid}.npy"))
-
+    
 def load_embedding_values(embedding_files):
-    return normalize(np.concatenate([np.load(file) for file in embedding_files], axis=0), axis=1)
+    if not embedding_files:
+        raise ValueError("No embedding files provided.")
+    loaded_arrays = [np.load(file) for file in embedding_files]
+    if not any(len(arr) > 0 for arr in loaded_arrays):
+        raise ValueError("Failed to load any arrays from embedding files.")
+    return normalize(np.concatenate(loaded_arrays, axis=0), axis=1)
 
 def get_video_duration(video_files):
     vid_cap = cv2.VideoCapture(video_files[0])

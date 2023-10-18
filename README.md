@@ -8,9 +8,10 @@ This project introduces an efficient approach to video segmentation aimed at sum
     <tr>
       <td colspan="2" style="text-align: center;">
         <a href="https://www.youtube.com/watch?v=nXBoOam5xJs">The Deadly Portuguese Man O' War | 4KUHD | Blue Planet II | BBC Earth</a>
+        <br>
+        <a href="./plots/keyframes_grid.png" target="_blank">Link to full keyframe grid for video 1</a>
       </td>
     </tr>
-    <tr>
       <td style="text-align: center;">
         <img src="./plots/original_video_scatter_1.png" alt="Original Video Scatter Plot" width="350" height="250">
       </td>

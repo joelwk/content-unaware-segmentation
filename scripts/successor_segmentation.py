@@ -98,24 +98,28 @@ class SegmentSuccessorAnalyzer:
         segment_start_idx = 0
         for i, ax in enumerate(flat_axes[:num_frames]):
             frame, _ = frame_embedding_pairs[i]
-            ax.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            if i - 1 in new_segments:
-                keyframe_data[i] = {
-                    'index': i,
-                    'time_frame': timestamps[i]
-                }
-                segment_start_idx = i
-                segment_counter += 1
-            annotate_plot(ax, idx=i, successor_sim=successor_distance, distances=distances, 
-                          global_frame_start_idx=0, window_idx=i, 
-                          segment_label=f"Segment {segment_counter}", timestamp=timestamps[i])
-            individual_keyframe_path = os.path.join(save_dir, f'individual_keyframe_{individual_keyframe_counter}.png')
-            individual_keyframe_counter += 1
-            cv2.imwrite(individual_keyframe_path, frame)
-        
+
+            if is_clear_image(frame):  # Check if the image is too dark or too light
+                ax.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                if i - 1 in new_segments:
+                    keyframe_data[i] = {
+                        'index': i,
+                        'time_frame': timestamps[i]
+                    }
+                    segment_start_idx = i
+                    segment_counter += 1
+                annotate_plot(ax, idx=i, successor_sim=successor_distance, distances=distances,
+                            global_frame_start_idx=0, window_idx=i,
+                            segment_label=f"Segment {segment_counter}", timestamp=timestamps[i])
+
+                individual_keyframe_path = os.path.join(save_dir, f'individual_keyframe_{individual_keyframe_counter}.png')
+                individual_keyframe_counter += 1
+                cv2.imwrite(individual_keyframe_path, frame)
+
         for i in range(num_frames, len(flat_axes)):
             flat_axes[i].axis('off')
 
+        plt.tight_layout()  # Adjust the layout to reduce white space
         plt_path = os.path.join(save_dir, 'keyframes_grid.png')
         plt.savefig(plt_path)
 
@@ -123,6 +127,13 @@ class SegmentSuccessorAnalyzer:
         with open(json_path, 'w') as f:
             json.dump(keyframe_data, f)
 
+def remove_whitespace(frame):
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray = 255*(gray < 128).astype(np.uint8)
+    coords = cv2.findNonZero(gray)
+    x, y, w, h = cv2.boundingRect(coords)
+    return frame[y:y+h, x:x+w]
+    
 def annotate_plot(ax, idx, successor_sim, distances, global_frame_start_idx, window_idx, segment_label, timestamp=None):
     title_elements = [
         f"{segment_label}",
