@@ -10,12 +10,12 @@ from typing import List, Tuple, Union, Optional
 from load_data import read_config, get_all_video_ids, load_video_files, load_key_video_files, load_embedding_files, load_embedding_values, get_video_duration, load_keyframe_embedding_files
 from segment_processing import get_segmented_and_filtered_frames, filter_keyframes_based_on_phash, calculate_successor_distance, check_for_new_segment, calculate_distances_to_centroids, read_thresholds_config
 
-def segment_video_using_keyframes_and_embeddings(video_path, cut_output_dir, keyframe_timestamps, thresholds, suffix_=None):
+def segment_video_using_keyframes_and_embeddings(video_path, keyframe_clip_output_dir, keyframe_timestamps, thresholds, suffix_=None):
     # Validate types
     if not isinstance(video_path, str):
         raise TypeError("video_path must be a string.")
-    if not isinstance(cut_output_dir, str):
-        raise TypeError("cut_output_dir must be a string.")
+    if not isinstance(keyframe_clip_output_dir, str):
+        raise TypeError("keyframe_clip_output_dir must be a string.")
     if not isinstance(keyframe_timestamps, list):
         raise TypeError("keyframe_timestamps must be a list.")
     thresholds = read_config(section="thresholds")
@@ -42,7 +42,7 @@ def segment_video_using_keyframes_and_embeddings(video_path, cut_output_dir, key
                 adjusted_start_time = start_time
                 adjusted_end_time = end_time
 
-            output_path = f"{cut_output_dir}/cut_segment_{segment_idx}_{suffix_}.mp4"
+            output_path = f"{keyframe_clip_output_dir}/keyframe_clip_{segment_idx}_{suffix_}.mp4"
             command = [
                 'ffmpeg',
                 '-ss', str(adjusted_start_time),
@@ -68,7 +68,7 @@ def segment_video_using_keyframes_and_embeddings(video_path, cut_output_dir, key
             adjusted_start_time = start_time
             adjusted_end_time = current_time
             
-        output_path = f"{cut_output_dir}/cut_segment_{segment_idx}_{suffix_}.mp4"
+        output_path = f"{keyframe_clip_output_dir}/keyframe_clip_{segment_idx}_{suffix_}.mp4"
         command = [
             'ffmpeg',
             '-ss', str(adjusted_start_time),
@@ -100,7 +100,7 @@ def setup_for_video(vid, params, thresholds):
     key_video_files = load_key_video_files(str(vid), params)
     embedding_files = load_keyframe_embedding_files(str(vid), params)
     embedding_values = load_embedding_values(embedding_files)
-    clip_output = f"./output/cut_segments/{vid}"
+    clip_output = f"./output/keyframe_clip/{vid}"
     os.makedirs(clip_output, exist_ok=True)
     json_path = os.path.join(".", "output", "keyframes", str(vid), "keyframe_data.json")
     if not os.path.exists(json_path):

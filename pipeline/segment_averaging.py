@@ -90,8 +90,8 @@ def process_videos_and_metadata(dataset_folder, emb_folder):
         print(f"Average Embeddings for {sub_folder}:", average_embeddings)
 
 if __name__ == "__main__":
-    dataset_folder = './output/cut_segments/'
-    emb_folder = './segment_embeddings'
+    dataset_folder = './output/keyframe_clip/'
+    emb_folder = './keyframe_clip_embeddings'
     os.makedirs(dataset_folder, exist_ok=True)
     os.makedirs(emb_folder, exist_ok=True)
     process_videos_and_metadata(dataset_folder, emb_folder)

@@ -6,12 +6,12 @@ def move_and_group_files():
     # Define source directories
     src_dirs = {
         'originalvideos': './datasets/originalvideos',
-        'keyframes': './datasets/keyframes',
+        'keyframevideos': './datasets/keyframes',
         'keyframeembeddings': './datasets/keyframeembeddings',
-        'cut_segments': './output/cut_segments',
-        'keyframes_segments': './output/keyframes',
+        'keyframe_clips': './output/keyframe_clips',
+        'keyframes': './output/keyframes',
     }
-    src_dirs['keyframeembeddings_avg'] = './segment_embeddings/average_embeddings'
+    src_dirs['keyframeembeddings_avg'] = './keyframe_clip_embeddings/keyframe_clip_segment_averages'
     # Define destination directory
     dest_dir = './completedatasets'
     # Create destination directory if it doesn't exist
@@ -44,13 +44,13 @@ def move_and_group_files():
     move_completed_datasets()
 
 def move_completed_datasets():
-    src_folder = './segment_embeddings'
+    src_folder = './keyframe_clip_embeddings'
     dest_folder = './completedatasets'
     # Create destination directory if it doesn't exist
     os.makedirs(dest_folder, exist_ok=True)
     for sub_folder in glob.glob(os.path.join(src_folder, '*')):
         sub_folder_name = os.path.basename(sub_folder)
-        dest_sub_folder = os.path.join(dest_folder, sub_folder_name, 'segment_averages')
+        dest_sub_folder = os.path.join(dest_folder, sub_folder_name, 'keyframe_clip_segment_averages')
         # Create the parent integer folder if it doesn't exist
         os.makedirs(os.path.join(dest_folder, sub_folder_name), exist_ok=True)
         # Move the subfolder
