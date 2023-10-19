@@ -86,8 +86,6 @@ def process_videos_and_metadata(dataset_folder, emb_folder):
             
             # Remove the original embedding file to clean up
             os.remove(emb_file_path)
-        
-        print(f"Average Embeddings for {sub_folder}:", average_embeddings)
 
 if __name__ == "__main__":
     dataset_folder = './output/keyframe_clip/'
