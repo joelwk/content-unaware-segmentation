@@ -133,7 +133,6 @@ def remove_whitespace(frame):
     coords = cv2.findNonZero(gray)
     x, y, w, h = cv2.boundingRect(coords)
     return frame[y:y+h, x:x+w]
-    
 def annotate_plot(ax, idx, successor_sim, distances, global_frame_start_idx, window_idx, segment_label, timestamp=None):
     title_elements = [
         f"{segment_label}",
@@ -157,19 +156,25 @@ def run_analysis(analyzer_class, specific_videos=None):
     if specific_videos is not None:
         video_ids = [vid for vid in video_ids if vid in specific_videos]
     for video in video_ids:
-      
+        try:
+            keyframe_embedding_files = load_keyframe_embedding_files(video, params)
+            embedding_values = load_embedding_values(keyframe_embedding_files)
+        except ValueError as e:
+            if str(e) == "No embedding files provided.":
+                logging.warning(f"Skipping video {video} due to missing embedding files.")
+                continue
+            elif str(e) == "Failed to load any arrays from embedding files.":
+                logging.warning(f"Skipping video {video} due to failure in loading arrays.")
+                continue
+            else:
+                raise  # re-raise the caught exception if it's a different one
         video_files = load_video_files(video, params)
         if not video_files:
             print(f"No video files found for video: {video}. Skipping analysis.")
             continue
-        
         key_video_files = load_key_video_files(video, params)
-        keyframe_embedding_files = load_keyframe_embedding_files(video, params)
-        
-        embedding_values = load_embedding_values(keyframe_embedding_files)
         total_duration = get_video_duration(video_files)
         save_dir = f"./output/keyframes/{video}"
         os.makedirs(save_dir, exist_ok=True)
-        analyzer = analyzer_class(total_duration, embedding_values,thresholds)
-        analyzer.run(video_files,thresholds, key_video_files, save_dir)
-        
+        analyzer = analyzer_class(total_duration, embedding_values, thresholds)
+        analyzer.run(video_files, thresholds, key_video_files, save_dir)

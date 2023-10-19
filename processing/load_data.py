@@ -31,7 +31,7 @@ def load_embedding_values(embedding_files):
     if not any(len(arr) > 0 for arr in loaded_arrays):
         raise ValueError("Failed to load any arrays from embedding files.")
     return normalize(np.concatenate(loaded_arrays, axis=0), axis=1)
-
+    
 def get_video_duration(video_files):
     vid_cap = cv2.VideoCapture(video_files[0])
     total_duration = int(vid_cap.get(cv2.CAP_PROP_FRAME_COUNT)) / int(vid_cap.get(cv2.CAP_PROP_FPS))
