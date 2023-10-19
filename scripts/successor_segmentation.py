@@ -23,10 +23,8 @@ class SegmentSuccessorAnalyzer:
             raise TypeError("total_duration must be a float.")
         if not isinstance(embedding_values, np.ndarray):
             raise TypeError("embedding_values must be a numpy array.")
-        
         # Read and store thresholds from config
         self.thresholds = self.read_thresholds_config()
-        
         self.embedding_values = embedding_values
         self.total_duration = total_duration
         self.max_segment_duration = int(self.thresholds['max_duration']) if max_segment_duration is not None else None
@@ -98,7 +96,6 @@ class SegmentSuccessorAnalyzer:
         segment_start_idx = 0
         for i, ax in enumerate(flat_axes[:num_frames]):
             frame, _ = frame_embedding_pairs[i]
-
             if is_clear_image(frame):  # Check if the image is too dark or too light
                 ax.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
                 if i - 1 in new_segments:
@@ -111,18 +108,14 @@ class SegmentSuccessorAnalyzer:
                 annotate_plot(ax, idx=i, successor_sim=successor_distance, distances=distances,
                             global_frame_start_idx=0, window_idx=i,
                             segment_label=f"Segment {segment_counter}", timestamp=timestamps[i])
-
                 individual_keyframe_path = os.path.join(save_dir, f'individual_keyframe_{individual_keyframe_counter}.png')
                 individual_keyframe_counter += 1
                 cv2.imwrite(individual_keyframe_path, frame)
-
         for i in range(num_frames, len(flat_axes)):
             flat_axes[i].axis('off')
-
         plt.tight_layout()  # Adjust the layout to reduce white space
         plt_path = os.path.join(save_dir, 'keyframes_grid.png')
         plt.savefig(plt_path)
-
         json_path = os.path.join(save_dir, 'keyframe_data.json')
         with open(json_path, 'w') as f:
             json.dump(keyframe_data, f)
@@ -133,11 +126,11 @@ def remove_whitespace(frame):
     coords = cv2.findNonZero(gray)
     x, y, w, h = cv2.boundingRect(coords)
     return frame[y:y+h, x:x+w]
+
 def annotate_plot(ax, idx, successor_sim, distances, global_frame_start_idx, window_idx, segment_label, timestamp=None):
     title_elements = [
         f"{segment_label}",
-        f"Successor Value: {successor_sim[idx]:.2f}"
-    ]
+        f"Successor Value: {successor_sim[idx]:.2f}"]
     if timestamp is not None:
         title_elements.append(f"Timestamp: {timestamp}")
     ax.set_title("\n".join(title_elements), fontsize=8, pad=6)
