@@ -16,7 +16,7 @@ def load_video_files(vid, params):
     return sorted(glob.glob(f"{params['originalframes']}/{vid}.mp4"))
 
 def load_audio_files(vid, params):
-    return sorted(glob.glob(f"{params['originalframes']}/{vid}.mpa"))
+    return sorted(glob.glob(f"{params['originalframes']}/{vid}.m4a"))
 
 def load_key_video_files(vid, params):
     return sorted(glob.glob(f"{params['keyframes']}/{vid}.mp4"))
