@@ -7,7 +7,7 @@ from PIL import Image
 import cv2
 import subprocess
 from typing import List, Tuple, Union, Optional
-from load_data import read_config, get_all_video_ids, load_video_files, load_key_video_files, load_embedding_files, load_embedding_values, get_video_duration, load_keyframe_embedding_files
+from load_data import read_config, get_all_video_ids, load_video_files, load_audio_files, load_key_video_files, load_embedding_files, load_embedding_values, get_video_duration, load_keyframe_embedding_files
 from segment_processing import get_segmented_and_filtered_frames, filter_keyframes_based_on_phash, calculate_successor_distance, check_for_new_segment, calculate_distances_to_centroids, read_thresholds_config
 
 def segment_video_using_keyframes_and_embeddings(video_path, keyframe_clip_output_dir, keyframe_timestamps, thresholds, suffix_=None):
@@ -80,20 +80,48 @@ def segment_video_using_keyframes_and_embeddings(video_path, keyframe_clip_outpu
         subprocess.run(command)
     video_key_frames.release()
 
+def segment_audio_using_keyframes(audio_path, audio_clip_output_dir, keyframe_timestamps, thresholds, suffix_=None):
+    start_time = 0
+    segment_idx = 0
+    current_time = 0.0  # Initialize current_time to 0
+    for i, timestamp in enumerate(keyframe_timestamps):
+        end_time = timestamp
+        # Tolerance logic (similar to video)
+        if "keyframe" in str(suffix_):
+            tolerance = float(thresholds['tolerance'])  * (end_time - start_time)
+            adjusted_start_time = start_time + tolerance
+            adjusted_end_time = end_time - tolerance
+        else:
+            adjusted_start_time = start_time
+            adjusted_end_time = end_time
+
+        output_path = f"{audio_clip_output_dir}/keyframe_audio_clip_{segment_idx}_{suffix_}.mpa"
+        command = [
+            'ffmpeg',
+            '-ss', str(adjusted_start_time),
+            '-to', str(adjusted_end_time),
+            '-i', audio_path,
+            '-acodec', 'copy',
+            '-y', output_path
+        ]
+        subprocess.run(command)
+
+        start_time = end_time
+        segment_idx += 1
+        current_time = end_time
 
 def main(specific_videos=None):
     params = read_config(section="directory")
     thresholds = read_thresholds_config()  # Read thresholds here for consistency
-    
     # Validate types
     if specific_videos and not isinstance(specific_videos, list):
         raise TypeError("specific_videos must be a list or None.")
     
     video_ids = get_all_video_ids(params['originalframes']) if specific_videos is None else specific_videos
     for vid in video_ids:
-        setup_for_video(vid, params, thresholds)  # Pass thresholds as an argument
+        setup_for_video_audio(vid, params, thresholds)  # Pass thresholds as an argument
 
-def setup_for_video(vid, params, thresholds):
+def setup_for_video_audio(vid, params, thresholds):
     # Validate types
     thresholds = read_thresholds_config()
     video_files = load_video_files(str(vid), params)
@@ -113,3 +141,9 @@ def setup_for_video(vid, params, thresholds):
     keyframe_timestamps = [data['time_frame'] for data in keyframe_data.values()]
     # Using the union of timestamps to segment video
     segment_video_using_keyframes_and_embeddings(key_video_files[0], clip_output, keyframe_timestamps,thresholds, suffix_='_fromkeyvideo_filtered')
+    
+    # New audio segmentation
+    audio_files = load_audio_files(str(vid), params)
+    audio_clip_output = f"./output/keyframe_audio_clip/{vid}"
+    os.makedirs(audio_clip_output, exist_ok=True)
+    segment_audio_using_keyframes(audio_files[0], audio_clip_output, keyframe_timestamps, thresholds, suffix_='_fromaudio_filtered')

@@ -9,6 +9,7 @@ def move_and_group_files():
         'keyframevideos': './datasets/keyframes',
         'keyframeembeddings': './datasets/keyframeembeddings',
         'keyframe_clips': './output/keyframe_clip',
+        'keyframe_audio_clips': './output/keyframe_audio_clip',
         'keyframes': './output/keyframes',
         'keyframe_clip_embeddings': './keyframe_clip_embeddings/'
     }
@@ -33,7 +34,7 @@ def move_and_group_files():
             integer_suffix = basename.split('.')[0]
             
             # For some categories, there are nested files; process them
-            if category in ['keyframes', 'keyframe_clips', 'keyframe_clip_embeddings']:
+            if category in ['keyframes', 'keyframe_clips', 'keyframe_clip_embeddings','keyframe_audio_clips']:
                 for nested_file in glob.glob(f"{file_path}/*"):
                     if integer_suffix not in integer_suffixes:
                         integer_suffixes[integer_suffix] = []
