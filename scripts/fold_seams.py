@@ -95,7 +95,7 @@ def segment_audio_using_keyframes(audio_path, audio_clip_output_dir, keyframe_ti
             adjusted_start_time = start_time
             adjusted_end_time = end_time
 
-        output_path = f"{audio_clip_output_dir}/keyframe_audio_clip_{segment_idx}_{suffix_}.mpa"
+        output_path = f"{audio_clip_output_dir}/keyframe_audio_clip_{segment_idx}_{suffix_}.m4a"
         command = [
             'ffmpeg',
             '-ss', str(adjusted_start_time),
