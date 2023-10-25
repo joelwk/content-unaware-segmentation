@@ -95,7 +95,7 @@ def segment_audio_using_keyframes(audio_path, audio_clip_output_dir, keyframe_ti
             adjusted_start_time = start_time
             adjusted_end_time = end_time
 
-        output_path = f"{audio_clip_output_dir}/keyframe_audio_clip_{segment_idx}_{suffix_}.m4a"
+        output_path = f"{audio_clip_output_dir}/keyframe_audio_clip_{segment_idx}_{suffix_}.mpa"
         command = [
             'ffmpeg',
             '-ss', str(adjusted_start_time),
@@ -120,6 +120,13 @@ def main(specific_videos=None):
     video_ids = get_all_video_ids(params['originalframes']) if specific_videos is None else specific_videos
     for vid in video_ids:
         setup_for_video_audio(vid, params, thresholds)  # Pass thresholds as an argument
+
+def clean_extensions(directory, old_extension, new_extension):
+    for filename in os.listdir(directory):
+        if filename.endswith(old_extension):
+            new_filename = filename.replace(old_extension, new_extension)
+            os.rename(os.path.join(directory, filename), os.path.join(directory, new_filename))
+            print(f"Renamed: {filename} to {new_filename}")
 
 def setup_for_video_audio(vid, params, thresholds):
     # Validate types
@@ -147,3 +154,5 @@ def setup_for_video_audio(vid, params, thresholds):
     audio_clip_output = f"./output/keyframe_audio_clip/{vid}"
     os.makedirs(audio_clip_output, exist_ok=True)
     segment_audio_using_keyframes(audio_files[0], audio_clip_output, keyframe_timestamps, thresholds, suffix_='_fromaudio_filtered')
+    # Ensure audio files do not have duplicate extensions
+    clean_extensions(audio_clip_output, ".m4a.m4a", ".m4a")
