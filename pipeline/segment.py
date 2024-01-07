@@ -1,6 +1,6 @@
 from segment_averaging import main as segment_averaging_main
 from move_and_group import main as move_and_group_main
-from save_to_webdataset import main as save_to_webdataset_main
+from save_to_webdataset import package_datasets_to_webdataset_segmentation
 from whisper import main as whisper_main
 from successor_segmentation import SegmentSuccessorAnalyzer, run_analysis
 from fold_seams import main as fold_seams_main
@@ -46,7 +46,7 @@ def run_all_scripts():
         print('Running convert_types')
         convert_types()
         print('Running save_to_webdataset')
-        save_to_webdataset_main()
+        package_datasets_to_webdataset_segmentation()
     except Exception as e:
         print(f"An error occurred in the pipeline: {e}")
 
