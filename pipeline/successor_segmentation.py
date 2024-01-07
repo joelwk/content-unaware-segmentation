@@ -15,7 +15,7 @@ from PIL import Image
 from imagehash import phash
 from matplotlib.patches import Rectangle
 from pipeline import parse_args, generate_config,delete_associated_files,read_config,string_to_bool,is_directory_empty
-from segment_processing import get_segmented_and_filtered_frames, calculate_successor_distance, check_for_new_segment, read_thresholds_config
+from segmentation_processing import get_segmented_and_filtered_frames, calculate_successor_distance, check_for_new_segment, read_thresholds_config
 import load_data as ld 
 
 class SegmentSuccessorAnalyzer:

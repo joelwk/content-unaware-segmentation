@@ -163,8 +163,8 @@ def main():
         create_directories(selected_config)
         print('installing target packages')
         video2dataset = clone_repository("https://github.com/iejMac/video2dataset.git", os.path.join(base_path,'pipeline'))
-        modify_requirements_txt(f"{video2dataset}/requirements.txt", target_packages)
-        with open(f"{video2dataset_path}/requirements.txt", "a") as f:
+        ## Add imagehash to requirements.txt which is needed for successor_segmentation.py
+        with open(f"{video2dataset}/requirements.txt", "a") as f:
             f.write("imagehash>=4.3.1\n")
         status = install_local_package(video2dataset)
         external_parquet = directories.get("external_parquet", None)

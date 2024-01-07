@@ -10,7 +10,7 @@ import subprocess
 from typing import List, Tuple, Union, Optional
 from pipeline import read_config
 from load_data import get_all_video_ids, load_video_files, load_audio_files, load_key_video_files, load_embedding_files, load_embedding_values, get_video_duration, load_keyframe_embedding_files
-from segment_processing import get_segmented_and_filtered_frames, filter_keyframes_based_on_phash, calculate_successor_distance, check_for_new_segment, read_thresholds_config,delete_associated_files
+from segmentation_processing import get_segmented_and_filtered_frames, filter_keyframes_based_on_phash, calculate_successor_distance, check_for_new_segment, read_thresholds_config,delete_associated_files
 
 def segment_video_using_keyframes_and_embeddings(video_path, keyframe_clip_output_dir, keyframe_timestamps, thresholds, suffix_=None):
     # Validate types
