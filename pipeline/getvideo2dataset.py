@@ -1,0 +1,132 @@
+import os
+import pandas as pd
+import json
+import glob
+import configparser
+import subprocess
+import argparse
+import shutil
+import sys
+import ffmpeg
+from pipeline import read_config, generate_config, install_local_package, parse_args
+import cv2
+
+def load_dataset_requirements(directory):
+    return pd.read_parquet(f"{directory}/dataset_requirements.parquet").to_dict(orient='records')
+
+def get_video_duration(video_file):
+    vid_cap = cv2.VideoCapture(video_file)
+    total_duration = int(vid_cap.get(cv2.CAP_PROP_FRAME_COUNT)) / int(vid_cap.get(cv2.CAP_PROP_FPS))
+    vid_cap.release()
+    return total_duration
+
+def collect_video_metadata(video_files, output):
+    keyframe_video_locs = []
+    original_video_locs = []
+    for video_file in video_files:
+        video_id = os.path.basename(video_file).split('.')[0]
+        json_meta_path = video_file.replace('.mp4', '.json')
+        if not os.path.exists(json_meta_path):
+            print(f"JSON metadata file does not exist: {json_meta_path}")
+            continue
+        with open(json_meta_path, 'r') as f:
+            metadata = json.load(f)
+            print(metadata)
+        print(f"Loaded metadata for {video_id}: {metadata}")
+            
+        # Fallback to get_video_duration if 'duration' is not available in JSON metadata
+        duration = metadata.get('video_metadata', {}).get('streams', [{}])[0].get('duration', None)
+        print(duration)
+        if duration is None:
+            print(f"Duration not found in metadata. Calculating duration for {video_id}.")
+            duration = get_video_duration(video_file)
+        print(keyframe_video_locs)
+            
+        keyframe_video_locs.append({
+            "videoLoc": f"{output}/{video_id}_key_frames.mp4",
+            "videoID": video_id,
+            "duration": duration,
+        })
+        original_video_locs.append({
+            "videoLoc": video_file,
+            "videoID": video_id,
+            "duration": duration,
+        })
+    return keyframe_video_locs, original_video_locs
+
+def fix_codecs_in_directory(directories):
+    video_files = glob.glob(os.path.join(directories["originalframes"], '**/*.mp4'), recursive=True)
+    print(video_files)
+    for video_file in video_files:
+        video_id = os.path.basename(video_file).split('.')[0]
+        input_file_path = video_file 
+        output_file_path = os.path.join(directories["originalframes"], f"fixed_{video_id}.mp4")
+        try:
+            ffmpeg.input(input_file_path).output(output_file_path, vcodec='libx264', strict='-2', loglevel="quiet").overwrite_output().run(capture_stdout=True, capture_stderr=True)
+            print(f"Successfully re-encoded {video_file}")
+            os.remove(input_file_path)
+            os.rename(output_file_path, input_file_path)
+        except AttributeError as e:
+            print(f"AttributeError: {e}. FFMPEG might not be correctly installed or imported.")
+        except Exception as e:  
+            print(f"An unexpected error occurred: {e}")
+
+def segment_key_frames_in_directory(directories):
+    video_files = glob.glob(os.path.join(directories["originalframes"], '**/*.mp4'), recursive=True)
+    for video_file in video_files:
+        video_id = os.path.basename(video_file).split('.')[0]
+        output_file = os.path.join(directories["keyframes"], f"{video_id}_key_frames.mp4")
+        print(f"Segmenting key frames for {video_id}...")
+        command = f'ffmpeg -y -loglevel error -discard nokey -i {video_file} -c:s copy -c copy -copyts {output_file}'
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        if process.returncode == 0:
+            print(f"Successfully segmented key frames for {video_id}.")
+        else:
+            print(f"Failed to segment key frames for {video_id}. Error: {stderr.decode('utf8')}")
+
+def save_metadata_to_parquet(keyframe_video_locs, original_video_locs, directory):
+    keyframe_video_df = pd.DataFrame(keyframe_video_locs)
+    original_video_df = pd.DataFrame(original_video_locs)
+    keyframe_video_df['duration'] = keyframe_video_df['duration'].astype(float)
+    original_video_df['duration'] = original_video_df['duration'].astype(float)
+    keyframe_video_df.to_parquet(f'{directory}/keyframe_video_requirements.parquet', index=False)
+    original_video_df.to_parquet(f'{directory}/original_video_requirements.parquet', index=False)
+
+def prepare_clip_encode(directories):
+    dataset_requirements = load_dataset_requirements(directories["base_directory"])
+    df = pd.DataFrame(dataset_requirements)
+    video_files = glob.glob(os.path.join(directories["originalframes"], '**/*.mp4'), recursive=True)
+    keyframe_video_locs, original_video_locs = collect_video_metadata(video_files, directories["keyframes"])
+    save_metadata_to_parquet(keyframe_video_locs, original_video_locs, directories["base_directory"])
+
+def run_video2dataset_with_yt_dlp(directories):
+    os.makedirs(directories["originalframes"], exist_ok=True)
+    url_list = os.path.join(directories["base_directory"], 'dataset_requirements.parquet')
+    print(f"Reading URLs from: {url_list}")
+    df = pd.read_parquet(url_list)
+    for idx, row in df.iterrows():
+        print(f"Processing video {idx+1}: {row['url']}")
+        command = [
+            'video2dataset',
+            '--input_format', 'parquet',
+            '--url_list', url_list,
+            '--encode_formats', '{"video": "mp4", "audio": "m4a"}',
+            '--output_folder', directories["originalframes"],
+            '--config', os.path.join(directories["main_repo"], 'config.yaml')]
+        result = subprocess.run(command, capture_output=True, text=True)
+        print("Return code:", result.returncode)
+        print("STDOUT:", result.stdout)
+        
+def main():
+    directories = read_config(section="directory")
+    run_video2dataset_with_yt_dlp(directories)
+    fix_codecs_in_directory(directories)
+    segment_key_frames_in_directory(directories)
+    prepare_clip_encode(directories)
+    exit_status = 0 
+    print(f"Exiting {__name__} with status {exit_status}")
+    return exit_status
+if __name__ == "__main__":
+    exit_status = main()
+    sys.exit(exit_status)

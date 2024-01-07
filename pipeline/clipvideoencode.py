@@ -1,60 +1,45 @@
-import os
-import argparse
+from pipeline import read_config
 import subprocess
-import pandas as pd
-from pipeline import *
+import argparse
+import os
 
-def install_local_package(directory):
-    original_directory = os.getcwd()
-    if os.path.exists(directory):
-        print(f"Changing directory to {directory}")
-        os.chdir(directory)
-        subprocess.run(["pip", "install", "-e", "."])
-        os.chdir(original_directory)
-        print(f"Changed directory back to {original_directory}")
-        return True
+def install_clip_video_encode():
+    subprocess.run(["pip", "install", "clip-video-encode"], check=True)
+
+def clip_encode(selected_config):
+
+    # Dynamically set the base path
+    if 'content' in os.getcwd():
+        base_path = '/content'  # Google Colab
     else:
-        print(f"Directory {directory} does not exist. Skipping package installation.")
-        return False
+        base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))  # Local environment
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='Pipeline Configuration')
-    parser.add_argument('--mode', type=str, default='local', help='Execution mode: local or cloud')
-    return parser.parse_args()
+    # Construct the absolute path for clip-video-encode
+    clipencode_abs_path = os.path.join(base_path, selected_config['main_repo'], 'clip-video-encode')
 
-args = parse_args()
 
-config = {
-    "local": generate_config("./datasets")}
-selected_config = config[args.mode]
+    from clip_video_encode import clip_video_encode
 
-def clip_encode():
     clip_video_encode(
-        selected_config["keyframe_parquet"],
-        selected_config["keyframe_embedding_output"],
-        frame_workers=25,
-        take_every_nth=1,
+        f'{selected_config["base_directory"]}/keyframe_video_requirements.parquet',
+        selected_config["embeddings"],
+        frame_workers=int(selected_config['frame_workers']),
+        take_every_nth=int(selected_config['take_every_nth']),
         metadata_columns=['videoLoc', 'videoID', 'duration']
     )
 
-def get_clipencode_path():
-    try:
-        with open("clipencode_path.txt", "r") as f:
-            return f.read().strip()
-    except FileNotFoundError:
-        print("clipencode_path.txt not found. Make sure to run the pipeline setup script first.")
-        return None
+def main():
+    directories = read_config(section="directory")
+    if 'content' in os.getcwd():
+        base_path = '/content'
+    else:
+        base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    # Install clip-video-encode
+    install_clip_video_encode()
+    # Run the clip encoding
+    clip_encode(directories)
+
+    return 0
 
 if __name__ == "__main__":
-  
-    clipencode_path = get_clipencode_path()
-    if clipencode_path:
-        success = install_local_package(clipencode_path)
-        if success:
-            try:
-                from repos.clipencode.clip_video_encode import clip_video_encode
-                clip_encode()
-            except ImportError:
-                print("Could not import clip_video_encode despite successful installation.")
-        else:
-            print("Could not import clip_video_encode due to installation failure.")
+    main()

@@ -3,7 +3,8 @@ import glob
 import pandas as pd
 import cv2
 import numpy as np
-from repos.clipencode.clip_video_encode import clip_video_encode
+from clip_video_encode import clip_video_encode
+from pipeline import read_config
 
 def get_video_duration(video_path):
     cap = cv2.VideoCapture(video_path)
@@ -87,9 +88,15 @@ def process_videos_and_metadata(dataset_folder, emb_folder):
             # Remove the original embedding file to clean up
             os.remove(emb_file_path)
 
-if __name__ == "__main__":
-    dataset_folder = './output/keyframe_clip/'
+def main():
+    directories = read_config(section="directory")
+    dataset_folder = directories['keyframe_clips_output']
     emb_folder = './keyframe_clip_embeddings'
     os.makedirs(dataset_folder, exist_ok=True)
     os.makedirs(emb_folder, exist_ok=True)
     process_videos_and_metadata(dataset_folder, emb_folder)
+
+if __name__ == "__main__":
+    main()
+
+
