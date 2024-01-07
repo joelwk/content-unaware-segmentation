@@ -5,7 +5,7 @@ import shutil
 import numpy as np
 import re
 
-from prepare import (
+from evaluations.prepare import (
     model_clap, prepare_audio_labels,read_config, format_labels, softmax,get_all_video_ids,normalize_scores,get_video_ids)
 
 def normalize_vectors(vectors):

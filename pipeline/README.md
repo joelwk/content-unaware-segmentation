@@ -4,29 +4,32 @@
 Segment video content with CLIP embeddings using successor frame disimilarity 
 
 ## Setup and Run
+#### Clone the repo and load data using one of the options below
 
-Using cli:
+1. Modify json in `./content-unaware-segmentation/pipeline/pipeline.py`
 ```
-# Clone repo
-git clone https://github.com/joelwk/content-unaware-segmentation.git
+    dataset_requirements = {
+        "data": [
+          {"url": "www.youtube.com/watch?v=iqrpwARx26E", 
+          "caption": "Elon Musk on politics: I would not vote for a pro-censorship candidate"},
+          {"url": "www.youtube.com/watch?v=YEUclZdj_Sc", 
+          "caption": "Why next-token prediction is enough for AGI"},
+        ]
+      }
+```
 
-# Segmentation
+2. Modify config.ini in `./content-unaware-segmentation/pipeline/config.ini` and  replace `external_parquet = None` with the parquet directory.
+  - `url` will be a youtube link or directory location
+  - `caption` can be the youtube title or short video description
+
+
+#### Reference the Config details below and run the following commands when ready:
+```
+# To run the segmentation pipeline:
 python ./clip-video-encode/examples/successor_segmentation/run_segmentation.py
 
-# Evaluation
+# To run the evaluation pipeline:
 python ./clip-video-encode/examples/successor_segmentation/run_zeroshots.py
-```
-Or notebook:
-```
-# Clone repo
-!git clone https://github.com/joelwk/content-unaware-segmentation.git
-
-# Segmentation
-%run ./clip-video-encode/examples/successor_segmentation/run_segmentation.py
-
-# Evaluation
-%run ./clip-video-encode/examples/successor_segmentation/run_zeroshots.py
-
 ```
 ## Config details
 ```
