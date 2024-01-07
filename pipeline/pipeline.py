@@ -13,7 +13,7 @@ import shutil
 
 def read_config(section="directory"):
     base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    config_path=f'{base_path}/contentsegmentation/config.ini'
+    config_path=f'{base_path}/pipeline/config.ini'
     if not os.path.exists(config_path):
         print(f"Configuration file {config_path} not found.")
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
@@ -155,14 +155,17 @@ def prepare_dataset_requirements(directories, external_parquet_path):
 
 def main():
     directories = read_config(section="directory")
+    base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     try:
         args = parse_args()
         config = {"local": generate_config(directories['base_directory'])}
         selected_config = config[args.mode]
         create_directories(selected_config)
         print('installing target packages')
-        clipvideoencode = clone_repository("https://github.com/iejMac/clip-video-encode.git", f"{directories['main_repo']}")
-        video2dataset = clone_repository("https://github.com/iejMac/video2dataset.git", f"{directories['main_repo']}")
+        video2dataset = clone_repository("https://github.com/iejMac/video2dataset.git", os.path.join(base_path,'pipeline'))
+        modify_requirements_txt(f"{video2dataset}/requirements.txt", target_packages)
+        with open(f"{video2dataset_path}/requirements.txt", "a") as f:
+            f.write("imagehash>=4.3.1\n")
         status = install_local_package(video2dataset)
         external_parquet = directories.get("external_parquet", None)
         if external_parquet == "None":

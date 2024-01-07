@@ -9,16 +9,11 @@ import shutil
 import sys
 import ffmpeg
 from pipeline import read_config, generate_config, install_local_package, parse_args
+from load_data import get_video_duration
 import cv2
 
 def load_dataset_requirements(directory):
     return pd.read_parquet(f"{directory}/dataset_requirements.parquet").to_dict(orient='records')
-
-def get_video_duration(video_file):
-    vid_cap = cv2.VideoCapture(video_file)
-    total_duration = int(vid_cap.get(cv2.CAP_PROP_FRAME_COUNT)) / int(vid_cap.get(cv2.CAP_PROP_FPS))
-    vid_cap.release()
-    return total_duration
 
 def collect_video_metadata(video_files, output):
     keyframe_video_locs = []
@@ -101,6 +96,7 @@ def prepare_clip_encode(directories):
     save_metadata_to_parquet(keyframe_video_locs, original_video_locs, directories["base_directory"])
 
 def run_video2dataset_with_yt_dlp(directories):
+    base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     os.makedirs(directories["originalframes"], exist_ok=True)
     url_list = os.path.join(directories["base_directory"], 'dataset_requirements.parquet')
     print(f"Reading URLs from: {url_list}")
@@ -113,7 +109,7 @@ def run_video2dataset_with_yt_dlp(directories):
             '--url_list', url_list,
             '--encode_formats', '{"video": "mp4", "audio": "m4a"}',
             '--output_folder', directories["originalframes"],
-            '--config', os.path.join(directories["main_repo"], 'config.yaml')]
+            '--config', os.path.join(base_path, 'pipeline', 'config.yaml')]
         result = subprocess.run(command, capture_output=True, text=True)
         print("Return code:", result.returncode)
         print("STDOUT:", result.stdout)

@@ -1,6 +1,4 @@
-from getvideo2dataset import main as getvideo2dataset_main
-from clipvideoencode import main as clipvideoencode_main
-from rename_and_move import main as rename_and_move_main
+from rename_and_move_files import main as rename_and_move_main
 from segment_averaging import main as segment_averaging_main
 from move_and_group import main as move_and_group_main
 from save_to_webdataset import main as save_to_webdataset_main
@@ -33,8 +31,6 @@ def run_all_scripts():
     specific_videos_str = config_params.get("specific_videos", "")
     specific_videos = [int(x.strip()) for x in specific_videos_str.strip('[]').split(',')] if specific_videos_str and specific_videos_str != "None" else None
     try:
-        getvideo2dataset_main()
-        clipvideoencode_main()
         print('Running rename_and_move')
         rename_and_move_main()
         run_analysis(SegmentSuccessorAnalyzer)
