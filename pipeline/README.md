@@ -96,7 +96,7 @@ display_image_audio_evals: bool: if True, then the image and audio evaluation wi
 ## Documentation and Examples
 
 ### Walk-through and Colab notebook
-* [Pipeline demo](https://colab.research.google.com/drive/1trloS72vEZFpeScW5VwZRsyHC51p2pz1?usp=sharing)
+* [Pipeline demo](https://colab.research.google.com/drive/1ZYAczt1sfXCbsakgr5dmgFejLNmcLMPB?usp=sharing)
 
 ### Segmentation process
 * [content-unaware-segmentation](https://github.com/joelwk/content-unaware-segmentation) -  An efficient approach to video segmentation aimed at summarizing videos into highly representative keyframes. The core technique involves analyzing semantic embeddings extracted from video frame embedding pairs. Each frame is assigned a score calculated based on the Euclidean distance between the embedding of the current frame and its successor.

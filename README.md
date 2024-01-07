@@ -75,7 +75,7 @@ This project introduces an efficient approach to video segmentation aimed at sum
 - `Results EDA.ipynb`: Successor segmentation video 1
 - `Generative Summarization EDA.ipynb`: Final summarization process - **work in progress**
 ### `pipeline/`
-- [`video_segmentation.ipynb`](https://colab.research.google.com/drive/1trloS72vEZFpeScW5VwZRsyHC51p2pz1?usp=sharing): Google Colab notebook for full video segmentation pipeline.
+- [`Successor-Segmentation-Pipeline.ipynb`](https://colab.research.google.com/drive/1ZYAczt1sfXCbsakgr5dmgFejLNmcLMPB?usp=sharing): Google Colab notebook for full video segmentation pipeline.
 - `pipeline.py`: Setup script for running the pipeline.
 - `clipvideoencode.py`: Script for extracting embeddings from video frames - uses `clip-video-encode` library.
 - `video2dataset.py`: Script for downloading YouTube videos with metadata and extracting keyframes - uses `video2dataset` library.

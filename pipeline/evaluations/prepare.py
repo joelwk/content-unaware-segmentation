@@ -81,15 +81,6 @@ def remove_duplicate_extension(filename):
         return '.'.join(parts[:-1])
     return filename
 
-def display_image_from_file(image_path):
-    img = Image.open(image_path)
-    display(img)
-
-def print_top_n(probs, labels):
-    top_n_indices = np.argsort(probs)[::-1][:5]
-    for i in top_n_indices:
-        print(f"{labels[i]}: {probs[i]:.4f}")
-
 def normalize_scores(scores):
     mean = np.mean(scores, axis=1)
     std = np.std(scores, axis=1)

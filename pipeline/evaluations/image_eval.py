@@ -22,10 +22,9 @@ import ast
 import warnings
 
 from evaluations.prepare import (
-    read_config, generate_embeddings, format_labels,
-    remove_duplicate_extension, process_keyframe_audio_pairs, get_embeddings, model_clip, 
-    display_image_from_file, print_top_n, normalize_scores, softmax, sort_and_store_scores,
-    load_key_image_files, load_key_audio_files, get_all_video_ids,process_files, move_paired
+    read_config, generate_embeddings, format_labels,remove_duplicate_extension, process_keyframe_audio_pairs, 
+    get_embeddings, model_clip, normalize_scores, softmax, sort_and_store_scores, load_key_image_files, 
+    load_key_audio_files, get_all_video_ids,process_files, move_paired
 )
     
 def is_good_image(is_person, face_probs, orientation_probs, engagement_probs):
@@ -45,7 +44,7 @@ def is_good_image(is_person, face_probs, orientation_probs, engagement_probs):
     # Return True if the image meets the criteria for being "Good"
     return is_person_detected and single_face_detected and facing_forward and engaged
 
-def zeroshot_classifier(image_path, video_identifier, output_dir, key=None, display_image=False):
+def zeroshot_classifier(image_path, video_identifier, output_dir, key=None):
     if key is None:
         key = image_path
         image_path = Image.open(image_path)
@@ -98,15 +97,6 @@ def zeroshot_classifier(image_path, video_identifier, output_dir, key=None, disp
     text_probs_valence = softmax(float(params['scalingfactor']) * image_features @ text_features_valence.T)
     face_detected = is_good_image(is_person_probs[0], face_probs[0], orientation_probs[0], engagement_probs[0])
     if face_detected:
-        if display_image:
-            display_image_from_file(image_path)
-            print_top_n(is_person_probs[0], format_labels(labels, 'checkifperson'))
-            print_top_n(type_person_probs[0], format_labels(labels, 'checktypeperson'))
-            print_top_n(face_probs[0], format_labels(labels, 'numberoffaces'))
-            print_top_n(orientation_probs[0], format_labels(labels, 'orientationlabels'))
-            print_top_n(engagement_probs[0], format_labels(labels, 'engagementlabels'))
-            print_top_n(text_probs_emotions[0], format_labels(labels, 'emotions'))
-            print_top_n(text_probs_valence[0], format_labels(labels, 'valence'))
         filename = os.path.basename(key)
         filename_without_ext = filename.split('.')[0]
         filename = remove_duplicate_extension(filename)
@@ -143,7 +133,7 @@ def process_from_directory():
             face_detected_in_video = False
             keyframes = load_key_image_files(video, params)
             for keyframe in keyframes:
-                if zeroshot_classifier(keyframe, video, os.path.join(params['outputs'], "image_evaluations"), key=None, display_image=False):
+                if zeroshot_classifier(keyframe, video, os.path.join(params['outputs'], "image_evaluations"), key=None):
                     face_detected_in_video = True
                 if not face_detected_in_video:  
                     video_dir = os.path.join(params['outputs'], "image_evaluations", str(video))
@@ -194,7 +184,7 @@ def process_from_wds():
                 if keyframe_match:
                     keyframe_id = str(keyframe_match.group(1))
                     keyframe_filename = f"keyframe_{keyframe_id}.png"
-                    if zeroshot_classifier(value, video_id, image_dir, key=keyframe_filename, display_image=False):
+                    if zeroshot_classifier(value, video_id, image_dir, key=keyframe_filename):
                         face_detected_in_video = True
                         if keyframe_id in whisper_segments:
                             audio_segment = whisper_segments[keyframe_id]
