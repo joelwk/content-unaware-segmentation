@@ -33,8 +33,7 @@ python ./clip-video-encode/examples/successor_segmentation/run_zeroshots.py
 ```
 ## Config details
 ```
-[directory] (all variables are either directory path or None)
-
+[directory] - (all variables are either directory path or None)
 base_directory: main dataset directory
 originalframes: original video directory
 keyframes: keyframe (images) of original video
@@ -48,6 +47,18 @@ keyframe_clips_output: temp directory before copying to ./completed
 keyframe_audio_clip_output: temp directory before copying to ./completed
 video_wds_output: where the wds will be saved
 external_parquet: location of external parquet file with list of video directories or youtube links
+frame_workers: int: number of Processes to distribute video reading to
+take_every_nth: int: only take every nth frame
+
+[config_params]
+mode: str: used for evaluation, if wds, then the a WebDataset will be used to evaluate videos, if directory, then the completedatasets directory(./completedatasets) will be used
+full_whisper_audio: bool: if True, then the full audio will be transcribed, if False, then only the audio segmennts will be transcribed
+transcript_mode: str: if all, both whisper transcripts and youtube subtitles are created, if whisper, then only whisper transcripts are created, if yt, then only youtube subtitles are created
+segment_video: bool: if True, then the video will be segmented, if False, then the video will not be segmented
+segment_audio: bool: if True, then the audio will be segmented, if False, then the audio will not be segmented
+compute_embeddings: bool: if True, then the average embedding value of each segment will be computed, if False, then the average embedding value of each segment will not be computed
+specific_videos: None or list of int in order of videos in parquet: if None, then all videos in the dataset will be processed, if list, then only the videos in the list will be processed
+plot_grid: bool: if True, then a grid of the keyframes will be plotted and saved, if False, then a grid of the keyframes will not be plotted and saved
 
 [thresholds]
 max_duration: int: max duration in seconds that each segment can be
@@ -65,16 +76,6 @@ facing_forward_threshold: float: threshold direction of face
 engagement_threshold: float: threshold for persons actions 
 type_person_threshold: float: threshold for gender and age cohort
 
-[config_params]
-mode: str: used for evaluation, if wds, then the a WebDataset will be used to evaluate videos, if directory, then the completedatasets directory(./completedatasets) will be used
-full_whisper_audio: bool: if True, then the full audio will be transcribed, if False, then only the audio segmennts will be transcribed
-transcript_mode: str: if all, both whisper transcripts and youtube subtitles are created, if whisper, then only whisper transcripts are created, if yt, then only youtube subtitles are created
-segment_video: bool: if True, then the video will be segmented, if False, then the video will not be segmented
-segment_audio: bool: if True, then the audio will be segmented, if False, then the audio will not be segmented
-compute_embeddings: bool: if True, then the average embedding value of each segment will be computed, if False, then the average embedding value of each segment will not be computed
-specific_videos: None or list of int in order of videos in parquet: if None, then all videos in the dataset will be processed, if list, then only the videos in the list will be processed
-plot_grid: bool: if True, then a grid of the keyframes will be plotted and saved, if False, then a grid of the keyframes will not be plotted and saved
-
 [evaluations]
 pipeline_function: str: transformer pipeline operation to perform (default: automatic-speech-recognition)
 chunk_length: int: number of chunks to divide the audio into
@@ -90,7 +91,6 @@ embeddings: str: label embeddings
 outputs: str: directory of final evaluation output
 completedatasets: str: directory of final segmentation output
 audio_threshold: float:  threshold for audio classification
-display_image_audio_evals: bool: if True, then the image and audio evaluation will be displayed, if False, then the image and audio evaluation will not be displayed
 ```
 
 ## Documentation and Examples
