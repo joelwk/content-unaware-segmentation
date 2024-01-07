@@ -141,9 +141,13 @@ def prepare_dataset_requirements(directories, external_parquet_path):
         print(f"Copied external Parquet file to {directories}")
     else:
         dataset_requirements = {
-            "data": [
-                {"url": "www.youtube.com/watch?v=nXBoOam5xJs", "caption": "The Deadly Portuguese Man O' War"},
-                {"url": "www.youtube.com/watch?v=pYbbyuqv86Q", "caption": "Hate Speech is a marketing campaign for censorship"},]}
+        "data": [
+            {"url": "www.youtube.com/watch?v=iqrpwARx26E", "caption": "Elon Musk on politics: I would not vote for a pro-censorship candidate"},
+            {"url": "www.youtube.com/watch?v=JKNyNJT4wzg", "caption": "Viktor Orban Blocks EU's €50 Billion Ukraine Aid Package"},
+            {"url": "www.youtube.com/watch?v=YEUclZdj_Sc", "caption": "Why next-token prediction is enough for AGI"},
+            ]
+        }
+        
         df = pd.DataFrame(dataset_requirements['data'])
         print(f"DataFrame to be saved:\n{df}")
         try:
@@ -163,6 +167,7 @@ def main():
         create_directories(selected_config)
         print('installing target packages')
         video2dataset = clone_repository("https://github.com/iejMac/video2dataset.git", os.path.join(base_path,'pipeline'))
+        
         ## Add imagehash to requirements.txt which is needed for successor_segmentation.py
         with open(f"{video2dataset}/requirements.txt", "a") as f:
             f.write("imagehash>=4.3.1\n")
