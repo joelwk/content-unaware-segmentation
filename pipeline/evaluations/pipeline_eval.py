@@ -29,7 +29,7 @@ def install_requirements():
         subprocess.run(["pip", "install", "yt-dlp"])
         subprocess.run(["pip", "install", "laion_clap"])
         subprocess.run(["pip", "install", "open_clip_torch"])
-        subprocess.run(["pip", "install", "scikit-learn==1.3.0"])
+        subprocess.run(["pip", "install", "scikit-learn"])
         subprocess.run(["pip", "install", "pydub"])
         subprocess.run(["pip", "install", "demucs"])
     except:

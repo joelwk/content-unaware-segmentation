@@ -192,7 +192,7 @@ def process_individual_audio_file(audio_file,audio_path,initial_input_directory,
 def process_entire_audio(audio_path, full_audio_clip_output_dir, evaluations):
     if not os.path.exists(full_audio_clip_output_dir):
         os.makedirs(full_audio_clip_output_dir)
-    full_audio_transcription_pipeline(audio_path, full_audio_clip_output_dir, evaluations)
+    full_audio_transcription_pipeline(audio_path, full_audio_clip_output_dir)
 
 
 def main():
