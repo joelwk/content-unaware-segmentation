@@ -125,8 +125,8 @@ def main():
         config_params['mode'] == 'wds'
         video_ids = get_video_ids(os.path.join(params['outputs'], 'image_evaluations'))
     for video in video_ids:
-        audio_directory = os.path.join(params['outputs'], 'audio_evaluations', {str(video)})
-        json_image_directory = os.path.join(params['outputs'], 'image_evaluations', {str(video)})
+        audio_directory = os.path.join(params['outputs'], 'audio_evaluations', str(video))
+        json_image_directory = os.path.join(params['outputs'], 'image_evaluations', str(video))
         paired_evaluations = os.path.join(params['outputs'], 'paired_evaluations/')
         all_image = os.path.join(params['outputs'], 'image_evaluations')
         all_audio = os.path.join(params['outputs'], 'audio_evaluations')
