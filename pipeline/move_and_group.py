@@ -64,8 +64,9 @@ def cleanup_unwanted_dirs(directory, unwanted_dirs=None):
 
 def main():
     directories = read_config()
+    evaluations = read_config(section="evaluations")
     move_and_group_files(directories)
-    cleanup_unwanted_dirs('./completedatasets', ['00000_stats', '00000'])
+    cleanup_unwanted_dirs(evaluations['completedatasets'], ['00000_stats', '00000'])
     cleanup_unwanted_dirs(directories['output'])  
     cleanup_unwanted_dirs(directories['base_directory'])  
 if __name__ == "__main__":

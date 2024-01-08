@@ -64,7 +64,8 @@ def move_and_remove_subdirectory(audio_clip_output_dir):
             except Exception as e:
                 print(f"Error removing {subdir_path}: {e}")
 def convert_types():
-    base_path = './completedatasets'
+    directories = read_config(section="evaluations")
+    base_path = directories['completedatasets']
     for n in os.listdir(base_path):
         audio_clip_output_dir = os.path.join(base_path, n ,'keyframe_audio_clips', 'whisper_audio_segments')
         convert_audio_files(base_path)  

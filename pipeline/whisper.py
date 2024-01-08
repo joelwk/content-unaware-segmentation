@@ -174,8 +174,8 @@ def process_individual_audio_file(audio_file,audio_path,initial_input_directory,
     if mode in ["whisper", "all"]:
         audio_pipeline(full_audio_path, individual_output_dir, keyframe_data, int(evaluations['max_duration_ms']))
     if mode in ["yt", "all"]:
-        keyframe_timeframes_path = f'./completedatasets/{video_id}/keyframe_audio_clips/whisper_audio_segments/keyframe_timestamps.json'
-        yt_transcripts_path = f'./completedatasets/{video_id}/originalvideos/{video_id}.json'
+        keyframe_timeframes_path = os.path.join(evaluations['completedatasets'], video_id, 'keyframe_audio_clips/whisper_audio_segments/keyframe_timestamps.json')
+        yt_transcripts_path = os.path.join(evaluations['completedatasets'], video_id, f'originalvideos/{video_id}.json')
         if os.path.exists(yt_transcripts_path) and os.path.exists(keyframe_timeframes_path):
             with open(yt_transcripts_path, 'r') as f:
                 yt_transcripts = json.load(f)

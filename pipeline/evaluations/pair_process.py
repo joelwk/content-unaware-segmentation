@@ -123,14 +123,14 @@ def main():
         video_ids = get_all_video_ids(params['completedatasets'])
     else:
         config_params['mode'] == 'wds'
-        video_ids = get_video_ids('./evaluations/image_evaluations/')
+        video_ids = get_video_ids(os.path.join(params['outputs'], 'image_evaluations'))
     for video in video_ids:
-        audio_directory = f"./evaluations/audio_evaluations/{str(video)}"
-        json_image_directory = f"./evaluations/image_evaluations/{str(video)}"
-        paired_evaluations = f"./evaluations/paired_evaluations/"
-        all_image = f"./evaluations/image_evaluations"
-        all_audio = f"./evaluations/audio_evaluations"
-        image_audio_pairs = f"./evaluations/audio_evaluations"
+        audio_directory = os.path.join(params['outputs'], 'audio_evaluations', {str(video)})
+        json_image_directory = os.path.join(params['outputs'], 'image_evaluations', {str(video)})
+        paired_evaluations = os.path.join(params['outputs'], 'paired_evaluations/')
+        all_image = os.path.join(params['outputs'], 'image_evaluations')
+        all_audio = os.path.join(params['outputs'], 'audio_evaluations')
+        image_audio_pairs = os.path.join(params['outputs'], 'audio_evaluations')
         pair_and_classify_with_clap(audio_directory, json_image_directory, audio_directory)
         process_all_keyframes(all_image, all_audio, paired_evaluations)
 

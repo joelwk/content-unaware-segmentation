@@ -175,13 +175,13 @@ def main():
         video_ids = get_all_video_ids(params['completedatasets'])
     else:
         config_params['mode'] == 'wds'
-        video_ids = get_video_ids('./evaluations/image_evaluations/')
+        video_ids = get_video_ids(os.path.join(params['outputs'], 'image_evaluations'))
     for video in video_ids:
         try:
-            in_path = f"./evaluations/image_audio_pairs/{str(video)}"
-            output_path = f"./evaluations/audio_evaluations/{str(video)}/audio_processed"
+            in_path = os.path.join(params['outputs'],'image_audio_pairs', {str(video)})
+            output_path = os.path.join(params['outputs'],'audio_evaluations', {str(video)}, 'audio_processed')
             max_duration_ms = int(params['max_duration_ms'] * 1000)
-            final_audio = f"./evaluations/audio_evaluations/{str(video)}/"
+            final_audio = os.path.join(params['outputs'], 'audio_evaluations', {str(video)})
             convert_flac_to_mp3(output_path)
             separate_audio(in_path, output_path, max_duration_ms)
             reorganize_and_move_vocals(output_path)
@@ -193,8 +193,6 @@ def main():
             continue
         except Exception as e:
             print(f"An unexpected error occurred for video {video}: {e}")
-            #TODO: improve logic for handling errors
-           # shutil.rmtree(f"{params['completedatasets']}/{str(video)}")
             shutil.rmtree(output_path)
             continue
     print("All videos processed.")
