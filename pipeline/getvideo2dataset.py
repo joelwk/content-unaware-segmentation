@@ -76,7 +76,7 @@ def segment_key_frames_in_directory(directories):
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         if process.returncode == 0:
-            print(f"Successfully segmented key frames for {video_id}.")
+            print(f"Successfully filtered best frames for {video_id}.")
         else:
             print(f"Failed to segment key frames for {video_id}. Error: {stderr.decode('utf8')}")
 
@@ -116,13 +116,18 @@ def run_video2dataset_with_yt_dlp(directories):
         
 def main():
     directories = read_config(section="directory")
-    run_video2dataset_with_yt_dlp(directories)
-    fix_codecs_in_directory(directories)
-    segment_key_frames_in_directory(directories)
-    prepare_clip_encode(directories)
+    if directories['video_load'] == 'directory':
+        prepare_clip_encode(directories)
+    else:
+        print("Downloading videos from yt")
+        run_video2dataset_with_yt_dlp(directories)
+        fix_codecs_in_directory(directories)
+        segment_key_frames_in_directory(directories)
+        prepare_clip_encode(directories)
     exit_status = 0 
     print(f"Exiting {__name__} with status {exit_status}")
     return exit_status
+    
 if __name__ == "__main__":
     exit_status = main()
     sys.exit(exit_status)

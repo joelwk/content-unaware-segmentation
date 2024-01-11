@@ -95,42 +95,43 @@ def zeroshot_classifier(image_path, video_identifier, output_dir, key=None):
     text_probs_emotions = softmax(float(params['scalingfactor']) * normalize_scores(image_features @ text_features.T))
     text_score_emotions = image_features @ text_features.T
     text_probs_valence = softmax(float(params['scalingfactor']) * image_features @ text_features_valence.T)
-    face_detected = is_good_image(is_person_probs[0], face_probs[0], orientation_probs[0], engagement_probs[0])
-    if face_detected:
-        filename = os.path.basename(key)
-        filename_without_ext = filename.split('.')[0]
-        filename = remove_duplicate_extension(filename)
-        if len(filename.split('_')) > 2:
-            filename = filename.split('_')[0] + '_' + filename.split('_')[1] + '.png'
-        save_path = os.path.join(run_output_dir, filename)
-        image_path.save(save_path)
-        sorted_type_person_scores = sort_and_store_scores(type_person_probs[0], format_labels(labels, 'checktypeperson'))
-        sorted_emotions = sort_and_store_scores(text_probs_emotions[0], format_labels(labels, 'emotions'))
-        sorted_emotions_scores = sort_and_store_scores(text_score_emotions[0], format_labels(labels, 'emotions'))
-        sorted_valence = sort_and_store_scores(text_probs_valence[0], format_labels(labels, 'valence'))
-        face_detected_python_bool = bool(face_detected)
-        json_data = {
+    perform_face_check = params.get('face_detected_in_video_or', 'False').lower() == 'true'
+    face_detected = True
+    if not perform_face_check:
+        face_detected = is_good_image(is_person_probs[0], face_probs[0], orientation_probs[0], engagement_probs[0])
+    filename = os.path.basename(key)
+    filename_without_ext = filename.split('.')[0]
+    filename = remove_duplicate_extension(filename)
+    if len(filename.split('_')) > 2:
+        filename = filename.split('_')[0] + '_' + filename.split('_')[1] + '.png'
+    save_path = os.path.join(run_output_dir, filename)
+    image_path.save(save_path)
+    sorted_type_person_scores = sort_and_store_scores(type_person_probs[0], format_labels(labels, 'checktypeperson'))
+    sorted_emotions = sort_and_store_scores(text_probs_emotions[0], format_labels(labels, 'emotions'))
+    sorted_emotions_scores = sort_and_store_scores(text_score_emotions[0], format_labels(labels, 'emotions'))
+    sorted_valence = sort_and_store_scores(text_probs_valence[0], format_labels(labels, 'valence'))
+    face_detected_python_bool = bool(face_detected)
+    json_data = {
             "image_path": filename,
             "face_detected": face_detected_python_bool,
             "face_detection_scores": sorted_type_person_scores,
             "emotions_probs": sorted_emotions,
             "emotions_scores":sorted_emotions_scores,
             "valence": sorted_valence}
-        filename_without_ext = filename_without_ext.split('_')[0] + '_' + filename_without_ext.split('_')[1]
-        json_filename = filename_without_ext + '.json'
-        with open(os.path.join(run_output_dir, json_filename), 'w') as json_file:
-            json.dump(json_data, json_file, indent=4)
-        npy_filename_base = filename_without_ext
-        np.save(os.path.join(run_output_dir, npy_filename_base + '_image_features.npy'), image_features)
-        return True 
-    return False 
+    filename_without_ext = filename_without_ext.split('_')[0] + '_' + filename_without_ext.split('_')[1]
+    json_filename = filename_without_ext + '.json'
+    with open(os.path.join(run_output_dir, json_filename), 'w') as json_file:
+      json.dump(json_data, json_file, indent=4)
+    npy_filename_base = filename_without_ext
+    np.save(os.path.join(run_output_dir, npy_filename_base + '_image_features.npy'), image_features)
+    return face_detected_python_bool
 
 def process_from_directory():
     params = read_config(section="evaluations")
     video_ids = get_all_video_ids(params['completedatasets'])
     for video in video_ids:
         try:
-            face_detected_in_video = False
+            face_detected_in_video = params.get('face_detected_in_video_or', 'False').lower() == 'true'
             keyframes = load_key_image_files(video, params)
             for keyframe in keyframes:
                 if zeroshot_classifier(keyframe, video, os.path.join(params['outputs'], "image_evaluations"), key=None):
@@ -161,7 +162,7 @@ def process_from_wds():
         video_id = sample['__key__'].split('/')[0]
         image_dir = os.path.join(params['outputs'], "image_evaluations", video_id)
         output_dir = os.path.join(params['outputs'], "image_audio_pairs", video_id)
-        face_detected_in_video = False
+        face_detected_in_video = params.get('face_detected_in_video_or', 'False').lower() == 'true'
         for key, value in sample.items():
             if key.endswith('mp3') and isinstance(value, AudioSegment):
                 segment_key = sample['__key__']

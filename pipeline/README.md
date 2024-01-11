@@ -49,6 +49,7 @@ video_wds_output: where the wds will be saved
 external_parquet: location of external parquet file with list of video directories or youtube links
 frame_workers: int: number of Processes to distribute video reading to
 take_every_nth: int: only take every nth frame
+video_load: str: directory, if the videos are already downloaded using yt-dl, download, if not, then the videos will be downloaded
 
 [config_params]
 mode: str: used for evaluation, if wds, then the a WebDataset will be used to evaluate videos, if directory, then the completedatasets directory(./completedatasets) will be used
@@ -91,6 +92,7 @@ embeddings: str: label embeddings
 outputs: str: directory of final evaluation output
 completedatasets: str: directory of final segmentation output
 audio_threshold: float:  threshold for audio classification
+face_detected_in_video_or: bool: if True, then all keyframes are classified, if False, only face detected keyframes are classified
 ```
 
 ## Documentation and Examples

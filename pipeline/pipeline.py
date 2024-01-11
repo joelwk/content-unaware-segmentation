@@ -165,13 +165,13 @@ def main():
         config = {"local": generate_config(directories['base_directory'])}
         selected_config = config[args.mode]
         create_directories(selected_config)
-        print('installing target packages')
-        video2dataset = clone_repository("https://github.com/iejMac/video2dataset.git", os.path.join(base_path,'pipeline'))
-        
-        ## Add imagehash to requirements.txt which is needed for successor_segmentation.py
-        with open(f"{video2dataset}/requirements.txt", "a") as f:
+        if directories['video_load'] == 'directory':
+            requirements_directory = clone_repository("https://github.com/iejMac/clip-video-encode.git", os.path.join(base_path,'pipeline'))
+        else:
+            requirements_directory = clone_repository("https://github.com/iejMac/video2dataset.git", os.path.join(base_path,'pipeline'))
+        with open(f"{requirements_directory}/requirements.txt", "a") as f:
             f.write("imagehash>=4.3.1\n")
-        status = install_local_package(video2dataset)
+        status = install_local_package(requirements_directory)
         external_parquet = directories.get("external_parquet", None)
         if external_parquet == "None":
             external_parquet = None
