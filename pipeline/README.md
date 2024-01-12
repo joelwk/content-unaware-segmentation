@@ -22,7 +22,6 @@ Segment video content with CLIP embeddings using successor frame disimilarity
   - `url` will be a youtube link or directory location
   - `caption` can be the youtube title or short video description
 
-
 #### Reference the Config details below and run the following commands when ready:
 ```
 # To run the segmentation pipeline:
@@ -31,6 +30,17 @@ python ./clip-video-encode/examples/successor_segmentation/run_segmentation.py
 # To run the evaluation pipeline:
 python ./clip-video-encode/examples/successor_segmentation/run_zeroshots.py
 ```
+## Download videos and segment
+If you want to download the videos and segment them, then make the following changes:
+1. Set `video_load` to download 
+2. Leave `base_directory` as is or change to your own directory
+
+## Load videos and segment
+If the videos are already downloaded then make the following changes:
+1. Set `video_load` to directory 
+2. Create a dataset_requirements.parquet file with the following columns: `url` and `caption`- see above for full details. 
+2. Update `base_directory` and `originalframes` to the directory that contains the videos and dataset_requirements.parquet made in step 2
+
 ## Config details
 ```
 [directory] - (all variables are either directory path or None)
