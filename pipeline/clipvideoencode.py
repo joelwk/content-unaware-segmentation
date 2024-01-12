@@ -1,11 +1,13 @@
-from pipeline import read_config
+from pipeline import read_config,install_local_package
 import subprocess
 import argparse
 import os
 from contextlib import contextmanager
 
-def install_clip_video_encode():
-    subprocess.run(["pip", "install", "clip-video-encode"], check=True)
+def install_requirements(directory):
+    req_file = os.path.join(directory, 'requirements.txt')
+    if os.path.exists(req_file):
+        subprocess.run(["pip", "install", "-r", req_file], check=True)
 
 @contextmanager
 def change_directory(destination):
@@ -22,7 +24,6 @@ def clip_encode(selected_config):
   base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
   clipencode_abs_path = os.path.join(base_path,'pipeline', 'clip-video-encode')
   with change_directory(clipencode_abs_path):
-      install_clip_video_encode()
       from clip_video_encode import clip_video_encode
   clip_video_encode(
           f'{selected_config["base_directory"]}/keyframe_video_requirements.parquet',
@@ -34,6 +35,9 @@ def clip_encode(selected_config):
 
 def main():
     directories = read_config(section="directory")
+    base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    clipencode_path = os.path.join(base_path, 'pipeline','clip-video-encode')
+    install_requirements(clipencode_path)
     clip_encode(directories)
     return 0
 
