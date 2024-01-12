@@ -161,12 +161,14 @@ def main():
         requirements_general =  os.path.join(base_path, 'pipeline')
         install_requirements(requirements_general)
         if directories['video_load'] == 'download':
+            # If videos need to be downloaded, install both video2dataset & clip-video-encode packages
             install_local_package(video2dataset_requirements_directory)
+            if external_parquet == "None":
+                external_parquet = None
+            prepare_dataset_requirements(directories["base_directory"], external_parquet)
         else:
+            # If videos are already downloaded, install clip-video-encode package to start segmentation
             install_requirements(clipvideoencode_requirements_directory)
-        if external_parquet == "None":
-            external_parquet = None
-        prepare_dataset_requirements(directories["base_directory"], external_parquet)
     except Exception as e:
         print(f"An exception occurred during pip install: {e}")
         return 1
