@@ -48,7 +48,6 @@ def generate_config(base_directory):
         "directory": base_directory,
         "original_videos": f"{base_directory}/originalvideos",
         "keyframe_videos": f"{base_directory}/keyframes",
-        "embedding_output": f"{base_directory}/originalembeddings",
         "keyframe_embedding_output": f"{base_directory}/keyframeembeddings",
         "config_yaml": f"{base_directory}/config.yaml"}
 

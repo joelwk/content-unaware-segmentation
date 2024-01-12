@@ -36,10 +36,10 @@ If you want to download the videos and segment them, then make the following cha
 2. Leave `base_directory` as is or change to your own directory
 
 ## Load videos and segment
-If the videos are already downloaded then make the following changes:
+If the videos are already downloaded (using video2dataset) then make the following changes:
 1. Set `video_load` to directory 
 2. Create a dataset_requirements.parquet file with the following columns: `url` and `caption`- see above for full details. 
-2. Update `base_directory` and `originalframes` to the directory that contains the videos and dataset_requirements.parquet made in step 2
+2. Replace ./datasets in `base_directory`, `originalframes`, `keyframes`, and `embeddings` to the directory that contains the downloaded videos and dataset_requirements.parquet created in step 2.
 
 ## Config details
 ```
