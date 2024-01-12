@@ -38,13 +38,6 @@ def change_directory(destination):
     finally:
         os.chdir(original_path)
 
-def install_local_package(directory):
-    with change_directory(directory):
-        result = subprocess.run(["pip", "install", "-e", "."], capture_output=True, text=True)
-        if result.returncode != 0:
-            print(f"Error installing local package: {result.stderr}")
-            return 1
-
 def parse_args():
     parser = argparse.ArgumentParser(description='Pipeline Configuration')
     parser.add_argument('--mode', type=str, default='local', help='Execution mode: local or cloud')
@@ -85,6 +78,19 @@ def create_directories(config):
         if not path.endswith(('.parquet', '.yaml')):
             os.makedirs(path, exist_ok=True)
 
+def get_local_package_dependencies(directory):
+    setup_file = os.path.join(directory, 'setup.py')
+    if not os.path.exists(setup_file):
+        print(f"Setup file not found in {directory}")
+        return []
+    dependencies = []
+    with open(setup_file, 'r') as file:
+        for line in file:
+            if 'install_requires' in line:
+                deps = re.findall(r"'([^']*)'", line)
+                dependencies.extend(deps)
+    return dependencies
+
 def clone_repository(git_url, target_dir):
     repo_name = git_url.split("/")[-1].replace(".git", "")
     full_path = os.path.join(target_dir, repo_name)
@@ -94,6 +100,13 @@ def clone_repository(git_url, target_dir):
             print(f"Error cloning repository: {result.stderr}")
             return 1
     return full_path
+
+def install_local_package(directory):
+    with change_directory(directory):
+        result = subprocess.run(["pip", "install", "-e", "."], capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"Error installing local package: {result.stderr}")
+            return 1
 
 def modify_requirements_txt(file_path, target_packages):
     with open(file_path, 'r') as f:
@@ -109,78 +122,69 @@ def modify_requirements_txt(file_path, target_packages):
             if not modified:
                 f.write(line)
 
-def get_local_package_dependencies(directory):
-    setup_file = os.path.join(directory, 'setup.py')
-    if not os.path.exists(setup_file):
-        print(f"Setup file not found in {directory}")
-        return []
-    dependencies = []
-    with open(setup_file, 'r') as file:
-        for line in file:
-            if 'install_requires' in line:
-                deps = re.findall(r"'([^']*)'", line)
-                dependencies.extend(deps)
-    return dependencies
-
-def install_requirements(directory, exclude_packages):
-    req_file = os.path.join(directory, 'requirements.txt')
-    if os.path.exists(req_file):
-        with open(req_file, 'r') as file:
-            lines = file.readlines()
-        filtered_lines = [line for line in lines if not any(pkg in line for pkg in exclude_packages)]
-        with open(req_file, 'w') as file:
-            file.writelines(filtered_lines)
-        result = subprocess.run(["pip", "install", "-r", req_file], capture_output=True, text=True)
-        if result.returncode != 0:
-            print(f"Error installing requirements: {result.stderr}")
-            return 1
+def install_requirements(directory, exclude_packages=None):
+    with change_directory(directory):
+        req_file = os.path.join(directory, 'requirements.txt')
+        if os.path.exists(req_file):
+            with open(req_file, 'r') as file:
+                lines = file.readlines()
+            # Exclude packages even if exclude_packages is None
+            exclude_packages = exclude_packages or []
+            filtered_lines = [line for line in lines if not any(pkg in line for pkg in exclude_packages)]
+            with open(req_file, 'w') as file:
+                file.writelines(filtered_lines)
+            result = subprocess.run(["pip", "install", "-e", req_file], capture_output=True, text=True)
+            if result.returncode != 0:
+                print(f"Error installing requirements: {result.stderr}")
+                return 1
 
 def prepare_dataset_requirements(directories, external_parquet_path):
-    if external_parquet_path is not None:
-        shutil.copy(external_parquet_path, f"{directories}/dataset_requirements.parquet")
-        print(f"Copied external Parquet file to {directories}")
-    else:
-        dataset_requirements = {
-        "data": [
-            {"url": "www.youtube.com/watch?v=iqrpwARx26E", "caption": "Elon Musk on politics: I would not vote for a pro-censorship candidate"},
-            {"url": "www.youtube.com/watch?v=JKNyNJT4wzg", "caption": "Viktor Orban Blocks EU's €50 Billion Ukraine Aid Package"},
-            {"url": "www.youtube.com/watch?v=YEUclZdj_Sc", "caption": "Why next-token prediction is enough for AGI"},
-            ]
-        }
-        
-        df = pd.DataFrame(dataset_requirements['data'])
-        print(f"DataFrame to be saved:\n{df}")
-        try:
+    try:
+        if external_parquet_path is not None:
+            shutil.copy(external_parquet_path, f"{directories}/dataset_requirements.parquet")
+            print(f"Copied external Parquet file to {directories}")
+        else:
+            dataset_requirements = {
+                "data": [
+                    {"url": "www.youtube.com/watch?v=iqrpwARx26E", "caption": "Elon Musk on politics: I would not vote for a pro-censorship candidate"},
+                    {"url": "www.youtube.com/watch?v=JKNyNJT4wzg", "caption": "Viktor Orban Blocks EU's €50 Billion Ukraine Aid Package"},
+                    {"url": "www.youtube.com/watch?v=YEUclZdj_Sc", "caption": "Why next-token prediction is enough for AGI"},
+                ]
+            }
+            df = pd.DataFrame(dataset_requirements['data'])
             parquet_file_path = f"{directories}/dataset_requirements.parquet"
             df.to_parquet(parquet_file_path, index=False)
             print(f"Saved Parquet file at {parquet_file_path}")
-        except Exception as e:
-            print(f"Error while saving Parquet file: {e}")
+    except Exception as e:
+        print(f"Error while saving Parquet file: {e}")
 
 def main():
     directories = read_config(section="directory")
     base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    external_parquet = directories.get("external_parquet", None)
     try:
         args = parse_args()
         config = {"local": generate_config(directories['base_directory'])}
         selected_config = config[args.mode]
         create_directories(selected_config)
-        if directories['video_load'] == 'directory':
-            requirements_directory = clone_repository("https://github.com/iejMac/clip-video-encode.git", os.path.join(base_path,'pipeline'))
+        clipvideoencode_repo_url = "https://github.com/iejMac/clip-video-encode.git"
+        video2dataset_repo_url = "https://github.com/iejMac/video2dataset.git"
+        clipvideoencode_requirements_directory = clone_repository(clipvideoencode_repo_url, os.path.join(base_path,'pipeline'))
+        video2dataset_requirements_directory = clone_repository(video2dataset_repo_url, os.path.join(base_path,'pipeline'))
+        if directories['video_load'] == 'download':
+            with open(f"{video2dataset_requirements_directory}/requirements.txt", "a") as f:
+                f.write("imagehash>=4.3.1\n")
+            v2dataset_path = get_local_package_dependencies(video2dataset_requirements_directory)
+            install_local_package(video2dataset_requirements_directory)
         else:
-            requirements_directory = clone_repository("https://github.com/iejMac/video2dataset.git", os.path.join(base_path,'pipeline'))
-        with open(f"{requirements_directory}/requirements.txt", "a") as f:
-            f.write("imagehash>=4.3.1\n")
-        status = install_local_package(requirements_directory)
-        external_parquet = directories.get("external_parquet", None)
+            with open(f"{clipvideoencode_requirements_directory}/requirements.txt", "a") as f:
+                f.write("imagehash>=4.3.1\n")
+            install_local_package(clipvideoencode_requirements_directory)
         if external_parquet == "None":
             external_parquet = None
         prepare_dataset_requirements(directories["base_directory"], external_parquet)
-        if status != 0:
-            return status
-        return 0 
     except Exception as e:
-        print(f"An exception occurred: {e}")
+        print(f"An exception occurred during pip install: {e}")
         return 1
 if __name__ == "__main__":
     sys.exit(main())
