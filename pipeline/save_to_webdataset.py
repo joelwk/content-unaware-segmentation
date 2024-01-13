@@ -78,7 +78,7 @@ def datasets_to_webdataset_evaluations(root_folder, output_folder, shard_size=1e
 def package_datasets_to_webdataset_evaluations():
     directories = read_config(section="directory")
     evaluations = read_config(section="evaluations")
-    root_folder = evaluations['outputs']
+    root_folder = evaluations['output']
     output_folder = directories['video_wds_output']
     os.makedirs(output_folder, exist_ok=True)
     datasets_to_webdataset_evaluations(root_folder, output_folder)

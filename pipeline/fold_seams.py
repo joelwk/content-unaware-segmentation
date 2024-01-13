@@ -14,6 +14,7 @@ from segmentation_processing import get_segmented_and_filtered_frames, filter_ke
 
 def segment_video_using_keyframes_and_embeddings(video_path, keyframe_clip_output_dir, keyframe_timestamps, thresholds, suffix_=None):
     # Validate types
+    print(keyframe_timestamps)
     if not isinstance(video_path, str):
         raise TypeError("video_path must be a string.")
     if not isinstance(keyframe_clip_output_dir, str):
@@ -120,14 +121,13 @@ def main(segment_video, segment_audio, specific_videos):
             continue
         keyframe_timestamps = [data['time_frame'] for data in keyframe_data.values()]
         if segment_video:
-            clip_output = os.path.join(base_directory, params['keyframe_clip_output'], str(vid))
-            output_path = os.path.join(base_directory, params['keyframe_clip_embeddings_output'])
-            os.makedirs(clip_output, exist_ok=True)
-            segment_video_using_keyframes_and_embeddings(key_video_files[0], output_path, clip_output, keyframe_timestamps, thresholds)
+            keyframe_clip_output = os.path.join(base_directory, params['keyframe_clip_output'], str(vid))
+            os.makedirs(keyframe_clip_output, exist_ok=True)
+            segment_video_using_keyframes_and_embeddings(key_video_files[0], keyframe_clip_output, keyframe_timestamps, thresholds)
         if segment_audio:
-            output_path = os.path.join(base_directory, params['keyframe_audio_clip_output'], str(vid))
-            os.makedirs(output_path, exist_ok=True)
-            segment_audio_using_keyframes(audio_files[0], output_path, keyframe_timestamps, thresholds, suffix_='_fromaudio_filtered')
+            keyframe_audio_clip_output = os.path.join(base_directory, params['keyframe_audio_clip_output'], str(vid))
+            os.makedirs(keyframe_audio_clip_output, exist_ok=True)
+            segment_audio_using_keyframes(audio_files[0], keyframe_audio_clip_output, keyframe_timestamps, thresholds, suffix_='_fromaudio_filtered')
 
 def setup_for_video_audio(vid, params):
     try:
@@ -138,6 +138,7 @@ def setup_for_video_audio(vid, params):
         embedding_values = load_embedding_values(embedding_files)
         audio_files = load_audio_files(str(vid), params)
         json_path = os.path.join(".", base_directory, params['keyframes'], str(vid), "keyframe_data.json")
+        print(json_path)
         if not os.path.exists(json_path):
             raise FileNotFoundError(f"No keyframe_data.json found for video id {vid}.")
         with open(json_path, 'r') as f:
@@ -147,7 +148,7 @@ def setup_for_video_audio(vid, params):
         return audio_files, video_files, key_video_files, embedding_files, keyframe_data
     except FileNotFoundError as e:
         print(e)
-        video_dir = os.path.join(base_directory, params['keyframes'], str(vid))
+        video_dir = os.path.join(base_directory, params['keyframe_clip_output'], str(vid))
         if os.path.exists(video_dir):
             shutil.rmtree(video_dir)
             print(f"Removed directory {video_dir} due to missing keyframe data.")
