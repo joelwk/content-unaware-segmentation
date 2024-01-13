@@ -1,4 +1,4 @@
-# Sucessor Segmentation with CLIP
+# Successor Segmentation with CLIP
 
 
 Segment video content with CLIP embeddings using successor frame disimilarity 
@@ -47,9 +47,9 @@ I suggest only modifying `base_directory` since it is the parent
 [directory]
 base_directory (/yourdirectory/): main dataset directory
 originalframes: original video directory, created by video-2-dataset
-keyframes: sucessor keyframe images of original video, ending value is location in seconds
-embeddings: sucessor keyframe embeddings of original video, created by clip-video-encode
-keyframe_clip_output = sucessor keyframe videos of original video, 1:1 relationship with keyframes in `keyframe`, length of video is is modified by `max_duration`
+keyframes: successor keyframe images of original video, ending value is location in seconds
+embeddings: successor keyframe embeddings of original video, created by clip-video-encode
+keyframe_clip_output = successor keyframe videos of original video, 1:1 relationship with keyframes in `keyframe`, length of video is is modified by `max_duration`
 keyframe_clip_embeddings_output: keyframe embdding averages, duration in seconds and keyframe path in json
 keyframe_audio_clip_output: sucssor keyframe audio of original video, 1:1 relationship with keyframe videos in `keyframe_clip_output`
 output: temp directory before copying to ./completeddatasets
