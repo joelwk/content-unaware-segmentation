@@ -32,7 +32,7 @@ class SegmentSuccessorAnalyzer:
     def run(self, video_files: List[str], thresholds: Dict[str, Optional[float]], keyframe_files: List[str], save_dir: str) -> Tuple[List[np.ndarray], List[float]]:
         directories = read_config(section="directory")
         config_params = read_config(section="config_params")
-        frame_embedding_pairs, timestamps = get_segmented_and_filtered_frames(video_files, keyframe_files,self.embedding_values, thresholds)
+        frame_embedding_pairs, timestamps = get_segmented_and_filtered_frames(video_files, keyframe_files, self.embedding_values, thresholds)
         if len(frame_embedding_pairs) < 2:
             video_id = int(os.path.basename(video_files[0]).split('.')[0])
             delete_associated_files(video_id, directories)
@@ -173,11 +173,12 @@ def is_clear_image(frame, lower_bound=10, upper_bound=245):
 def run_analysis(analyzer_class, specific_videos=None):
     thresholds = read_thresholds_config()  
     params = read_config(section="directory")
-    video_ids = ld.get_all_video_ids(params['original_frames'])
+    video_ids = ld.get_all_video_ids(os.path.join(params['base_directory'], params['original_frames']))
     if specific_videos is not None:
         video_ids = [vid for vid in video_ids if vid in specific_videos]
     for video in video_ids:
-        save_dir = f"{params['keyframe_outputs']}/{video}"
+        video = str(video)
+        save_dir = os.path.join(params['base_directory'],params['output'], params['keyframe_output'], video)
         try:
             keyframe_embedding_files = ld.load_keyframe_embedding_files(video, params)
             if not keyframe_embedding_files:

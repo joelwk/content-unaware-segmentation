@@ -1,18 +1,18 @@
 import os
 import glob
 import shutil
-from pipeline import read_config,is_directory_empty
+from pipeline import read_config, is_directory_empty
 
 def move_and_group_files(directories):
-    base_directory = directories['base_directory']
     # Define source directories for various categories of files
     src_dirs = {
-        'originalvideos':directories['original_frames'],
-        'keyframes': directories['keyframes'],
-        'keyframe_embeddings': directories['embeddings'],
+        'originalvideos': directories['original_frames'],
+        'keyframevideos': directories['keyframes'],
+        'keyframeembeddings': directories['embeddings'],
         'keyframe_clips': directories['keyframe_clip_output'],
-        'keyframe_audio_clip_output': directories['keyframe_audio_clip_output'],
-        'keyframe_clip_embeddings_output':directories['keyframe_clip_embeddings_output']
+        'keyframe_audio_clips': directories['keyframe_audio_clip_output'],
+        'keyframes': directories['keyframe_output'],
+        'keyframe_clip_embeddings': directories['keyframe_clip_embeddings_output'],
     }
     dest_dir = './completedatasets'
     os.makedirs(dest_dir, exist_ok=True)
@@ -24,8 +24,7 @@ def move_and_group_files(directories):
             if basename.endswith("_stats"):
                 continue
             integer_suffix = basename.split('.')[0]
-            directory_list = [directories['keyframes'], directories['keyframe_embeddings'],directories['keyframe_clips'], directories['keyframe_clip_embeddings_output'], directories['keyframe_audio_clip_output']]
-            if category in directory_list:
+            if category in [directories['keyframes'], directories['keyframe_clip_output'], directories['keyframe_clip_embeddings_output'],directories['keyframe_audio_clip_output']]:
                 for nested_file in glob.glob(f"{file_path}/*"):
                     if os.path.getsize(nested_file) == 0 or is_directory_empty(file_path):
                         invalid_suffixes.add(integer_suffix)
@@ -68,7 +67,7 @@ def main():
     evaluations = read_config(section="evaluations")
     move_and_group_files(directories)
     cleanup_unwanted_dirs(evaluations['completedatasets'], ['00000_stats', '00000'])
-    cleanup_unwanted_dirs(os.path.join(directories['base_directory'], directories['output']))  
+    cleanup_unwanted_dirs(directories['output'])  
     cleanup_unwanted_dirs(directories['base_directory'])  
 if __name__ == "__main__":
     main()

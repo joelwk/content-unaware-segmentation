@@ -9,7 +9,7 @@ import cv2
 import subprocess
 from typing import List, Tuple, Union, Optional
 from pipeline import read_config
-from load_data import get_all_video_ids, load_video_files, load_audio_files, load_key_video_files, load_embedding_files, load_embedding_values, get_video_duration, load_keyframe_embedding_files
+from load_data import get_all_video_ids, load_video_files, load_audio_files, load_key_video_files, load_embedding_values, get_video_duration, load_keyframe_embedding_files
 from segmentation_processing import get_segmented_and_filtered_frames, filter_keyframes_based_on_phash, calculate_successor_distance, check_for_new_segment, read_thresholds_config,delete_associated_files
 
 def segment_video_using_keyframes_and_embeddings(video_path, keyframe_clip_output_dir, keyframe_timestamps, thresholds, suffix_=None):
@@ -28,6 +28,7 @@ def segment_video_using_keyframes_and_embeddings(video_path, keyframe_clip_outpu
     frame_rate = int(video_key_frames.get(cv2.CAP_PROP_FPS))
     start_time = 0
     segment_idx = 0    
+    output_path = ""
     while True:
         ret, frame = video_key_frames.read()
         if not ret:
@@ -82,7 +83,8 @@ def segment_video_using_keyframes_and_embeddings(video_path, keyframe_clip_outpu
 def segment_audio_using_keyframes(audio_path, audio_clip_output_dir, keyframe_timestamps, thresholds, suffix_=None):
     start_time = 0
     segment_idx = 0
-    current_time = 0.0  # Initialize current_time to 0
+    current_time = 0.0
+    output_path = ""
     for i, timestamp in enumerate(keyframe_timestamps):
         end_time = timestamp
         # Tolerance logic (similar to video)
@@ -110,12 +112,10 @@ def segment_audio_using_keyframes(audio_path, audio_clip_output_dir, keyframe_ti
 def main(segment_video, segment_audio, specific_videos):
     params = read_config(section="directory")
     base_directory = params['base_directory']
-    thresholds = read_thresholds_config()  # Read thresholds for consistency
-    # Determine which videos to process
+    thresholds = read_thresholds_config()
     video_ids = get_all_video_ids(os.path.join(base_directory, params['original_frames'])) if specific_videos is None else specific_videos
     for vid in video_ids:
         audio_files, video_files, key_video_files, embedding_files, keyframe_data = setup_for_video_audio(vid, params)
-        # Skip this video if setup_for_video_audio returned None (due to an exception)
         if any(v is None for v in [audio_files, video_files, key_video_files, embedding_files, keyframe_data]):
             continue
         keyframe_timestamps = [data['time_frame'] for data in keyframe_data.values()]
@@ -125,19 +125,18 @@ def main(segment_video, segment_audio, specific_videos):
             os.makedirs(clip_output, exist_ok=True)
             segment_video_using_keyframes_and_embeddings(key_video_files[0], output_path, clip_output, keyframe_timestamps, thresholds)
         if segment_audio:
+            output_path = os.path.join(base_directory, params['keyframe_audio_clip_output'], str(vid))
             os.makedirs(output_path, exist_ok=True)
             segment_audio_using_keyframes(audio_files[0], output_path, keyframe_timestamps, thresholds, suffix_='_fromaudio_filtered')
 
 def setup_for_video_audio(vid, params):
     try:
-        # Load files and data required for both video and audio segmentation
         base_directory = params['base_directory']
         video_files = load_video_files(str(vid), params)
         key_video_files = load_key_video_files(str(vid), params)
         embedding_files = load_keyframe_embedding_files(str(vid), params)
         embedding_values = load_embedding_values(embedding_files)
         audio_files = load_audio_files(str(vid), params)
-        # Read keyframe data
         json_path = os.path.join(".", base_directory, params['output'], params['keyframes'], str(vid), "keyframe_data.json")
         if not os.path.exists(json_path):
             raise FileNotFoundError(f"No keyframe_data.json found for video id {vid}.")
@@ -148,7 +147,6 @@ def setup_for_video_audio(vid, params):
         return audio_files, video_files, key_video_files, embedding_files, keyframe_data
     except FileNotFoundError as e:
         print(e)
-        # Removing directory associated with the video
         video_dir = os.path.join(base_directory, params['keyframe_output'], str(vid))
         if os.path.exists(video_dir):
             shutil.rmtree(video_dir)
