@@ -169,7 +169,7 @@ def main():
         else:
             # If videos are already downloaded, install clip-video-encode package to start segmentation
             output_parquet = os.path.join(directories["base_directory"],'dataset_requirements.parquet')
-            create_parquet_from_videos = string_to_bool(os.path.join(directories["base_directory"], directories["original_frames"]), output_parquet)
+            create_parquet_from_videos = string_to_bool(os.path.join(directories["base_directory"], directories["original_frames"], output_parquet))
             install_requirements(clipvideoencode_requirements_directory)
     except Exception as e:
         print(f"An exception occurred during pip install: {e}")
