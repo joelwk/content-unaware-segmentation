@@ -41,20 +41,18 @@ If the videos are already downloaded (using video2dataset) then make the followi
 2. Create a dataset_requirements.parquet file with the following columns: `url` and `caption`- see above for full details. 
 2. Replace ./datasets in `base_directory`, `originalframes`, `keyframes`, and `embeddings` to the directory that contains the downloaded videos and dataset_requirements.parquet created in step 2.
 
-## Config details
+## Config detail instructions
+I suggest only modifying `base_directory` since it is the parent
 ```
-[directory] - (all variables are either directory path or None)
-base_directory: main dataset directory
-originalframes: original video directory
-keyframes: keyframe (images) of original video
-embeddings: embeddings of keyframe video
-originalembeddings: original embeddings of original video
-keyframe_clip_embeddings_outputs: keyframe clip (video embeddings) embeddings
-output: temp directory before copying to ./completed
-cut_segments_outputs: temp directory before copying to ./completed
-keyframe_outputs: temp directory before copying to ./completed
-keyframe_clips_output: temp directory before copying to ./completed
-keyframe_audio_clip_output: temp directory before copying to ./completed
+[directory]
+base_directory (/yourdirectory/): main dataset directory
+originalframes: original video directory, created by video-2-dataset
+keyframes: sucessor keyframe images of original video, ending value is location in seconds
+embeddings: sucessor keyframe embeddings of original video, created by clip-video-encode
+keyframe_clip_output = sucessor keyframe videos of original video, 1:1 relationship with keyframes in `keyframe`, length of video is is modified by `max_duration`
+keyframe_clip_embeddings_output: keyframe embdding averages, duration in seconds and keyframe path in json
+keyframe_audio_clip_output: sucssor keyframe audio of original video, 1:1 relationship with keyframe videos in `keyframe_clip_output`
+output: temp directory before copying to ./completeddatasets
 video_wds_output: where the wds will be saved
 external_parquet: location of external parquet file with list of video directories or youtube links
 frame_workers: int: number of Processes to distribute video reading to
