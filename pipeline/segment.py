@@ -10,7 +10,7 @@ import shutil
 from pipeline import read_config, string_to_bool
 
 def remove_incomplete_video_directories(directories, completedirectory):
-    required_dirs = [directories['keyframe_audio_clip_output'], directories['keyframes_embeddings'], directories['keyframes'], directories['original_frames']]
+    required_dirs = [directories['keyframe_audio_clip_output'], directories['embeddings'], directories['keyframes'], directories['original_frames']]
     base_dir = completedirectory['completedatasets']
     for video_dir in os.listdir(base_dir):
         video_path = os.path.join(base_dir, video_dir)
