@@ -134,18 +134,18 @@ def process_from_directory():
             face_detected_in_video = params.get('face_detected_in_video_or', 'False').lower() == 'true'
             keyframes = load_key_image_files(video, params)
             for keyframe in keyframes:
-                if zeroshot_classifier(keyframe, video, os.path.join(params['outputs'], "image_evaluations"), key=None):
+                if zeroshot_classifier(keyframe, video, os.path.join(params['output'], "image_evaluations"), key=None):
                     face_detected_in_video = True
                 if not face_detected_in_video:  
-                    video_dir = os.path.join(params['outputs'], "image_evaluations", str(video))
+                    video_dir = os.path.join(params['output'], "image_evaluations", str(video))
                     if os.path.exists(video_dir):
                         shutil.rmtree(video_dir)
                         video__original_dir = os.path.join(params['completedatasets'], str(video))
                         shutil.rmtree(video__original_dir)
                         print(f"No faces detected in any keyframes of video {video}. Directory {video_dir} removed.")
                     continue
-            image_dir = os.path.join(params['outputs'], "image_evaluations", str(video))
-            output_dir = os.path.join(params['outputs'], "image_audio_pairs", str(video))
+            image_dir = os.path.join(params['output'], "image_evaluations", str(video))
+            output_dir = os.path.join(params['output'], "image_audio_pairs", str(video))
             audio_dir = os.path.join(params['completedatasets'], str(video), "keyframe_audio_clips")
             process_keyframe_audio_pairs(image_dir, audio_dir, output_dir)
         except Exception as e:
@@ -160,8 +160,8 @@ def process_from_wds():
     #TODO: Add checks to avoid reproreprocessing
     for sample in dataset:
         video_id = sample['__key__'].split('/')[0]
-        image_dir = os.path.join(params['outputs'], "image_evaluations", video_id)
-        output_dir = os.path.join(params['outputs'], "image_audio_pairs", video_id)
+        image_dir = os.path.join(params['output'], "image_evaluations", video_id)
+        output_dir = os.path.join(params['output'], "image_audio_pairs", video_id)
         face_detected_in_video = params.get('face_detected_in_video_or', 'False').lower() == 'true'
         for key, value in sample.items():
             if key.endswith('mp3') and isinstance(value, AudioSegment):
