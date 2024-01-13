@@ -50,12 +50,13 @@ def collect_video_metadata(video_files, output):
     return keyframe_video_locs, original_video_locs
 
 def fix_codecs_in_directory(directories):
-    video_files = glob.glob(os.path.join(directories["originalframes"], '**/*.mp4'), recursive=True)
+    base_directory = directories['base_directory']
+    video_files = glob.glob(os.path.join(base_directory, directories["original_frames"], '**/*.mp4'), recursive=True)
     print(video_files)
     for video_file in video_files:
         video_id = os.path.basename(video_file).split('.')[0]
         input_file_path = video_file 
-        output_file_path = os.path.join(directories["originalframes"], f"fixed_{video_id}.mp4")
+        output_file_path = os.path.join(base_directory, directories["original_frames"], f"fixed_{video_id}.mp4")
         try:
             ffmpeg.input(input_file_path).output(output_file_path, vcodec='libx264', strict='-2', loglevel="quiet").overwrite_output().run(capture_stdout=True, capture_stderr=True)
             print(f"Successfully re-encoded {video_file}")
@@ -67,10 +68,11 @@ def fix_codecs_in_directory(directories):
             print(f"An unexpected error occurred: {e}")
 
 def segment_key_frames_in_directory(directories):
-    video_files = glob.glob(os.path.join(directories["originalframes"], '**/*.mp4'), recursive=True)
+    base_directory = directories['base_directory']
+    video_files = glob.glob(os.path.join(base_directory, directories["original_frames"], '**/*.mp4'), recursive=True)
     for video_file in video_files:
         video_id = os.path.basename(video_file).split('.')[0]
-        output_file = os.path.join(directories["keyframes"], f"{video_id}_key_frames.mp4")
+        output_file = os.path.join(base_directory, directories["keyframes"], f"{video_id}_key_frames.mp4")
         print(f"Segmenting key frames for {video_id}...")
         command = f'ffmpeg -y -loglevel error -discard nokey -i {video_file} -c:s copy -c copy -copyts {output_file}'
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -89,16 +91,18 @@ def save_metadata_to_parquet(keyframe_video_locs, original_video_locs, directory
     original_video_df.to_parquet(f'{directory}/original_video_requirements.parquet', index=False)
 
 def prepare_clip_encode(directories):
-    dataset_requirements = load_dataset_requirements(directories["base_directory"])
+    base_directory = directories['base_directory']
+    dataset_requirements = load_dataset_requirements(base_directory)
     df = pd.DataFrame(dataset_requirements)
-    video_files = glob.glob(os.path.join(directories["originalframes"], '**/*.mp4'), recursive=True)
-    keyframe_video_locs, original_video_locs = collect_video_metadata(video_files, directories["keyframes"])
-    save_metadata_to_parquet(keyframe_video_locs, original_video_locs, directories["base_directory"])
+    video_files = glob.glob(os.path.join(base_directory, directories["original_frames"], '**/*.mp4'), recursive=True)
+    keyframe_video_locs, original_video_locs = collect_video_metadata(video_files, os.path.join(base_directory, directories["keyframes"]))
+    save_metadata_to_parquet(keyframe_video_locs, original_video_locs, base_directory)
 
 def run_video2dataset_with_yt_dlp(directories):
+    base_directory = directories['base_directory']
     base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    os.makedirs(directories["originalframes"], exist_ok=True)
-    url_list = os.path.join(directories["base_directory"], 'dataset_requirements.parquet')
+    os.makedirs(os.path.join(base_directory, directories["original_frames"]), exist_ok=True)
+    url_list = os.path.join(base_directory, 'dataset_requirements.parquet')
     print(f"Reading URLs from: {url_list}")
     df = pd.read_parquet(url_list)
     for idx, row in df.iterrows():
@@ -108,7 +112,7 @@ def run_video2dataset_with_yt_dlp(directories):
             '--input_format', 'parquet',
             '--url_list', url_list,
             '--encode_formats', '{"video": "mp4", "audio": "m4a"}',
-            '--output_folder', directories["originalframes"],
+            '--output_folder', os.path.join(base_directory, directories["original_frames"]),
             '--config', os.path.join(base_path, 'pipeline', 'config.yaml')]
         result = subprocess.run(command, capture_output=True, text=True)
         print("Return code:", result.returncode)

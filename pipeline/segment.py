@@ -10,7 +10,7 @@ import shutil
 from pipeline import read_config, string_to_bool
 
 def remove_incomplete_video_directories(completedirectory):
-    required_dirs = ['keyframe_audio_clips', 'keyframeembeddings', 'keyframes', 'keyframevideos', 'originalvideos']
+    required_dirs = [completedirectory['keyframe_audio_clip_output'], completedirectory['keyframes_embeddings'], completedirectory['keyframes'], completedirectory['original_frames']]
     base_dir = completedirectory['completedatasets']
     for video_dir in os.listdir(base_dir):
         video_path = os.path.join(base_dir, video_dir)
@@ -22,12 +22,14 @@ def remove_incomplete_video_directories(completedirectory):
             print(f"Removed incomplete or empty directory: {video_path}")
 
 def run_all_scripts():
-    config_params = read_config(section="config_params")
-    completedirectory = read_config(section="evaluations")
-    segment_video = string_to_bool(config_params.get("segment_video", "False"))
-    segment_audio = string_to_bool(config_params.get("segment_audio", "True"))
-    compute_embeddings = string_to_bool(config_params.get("compute_embeddings", "False"))
-    specific_videos_str = config_params.get("specific_videos", "")
+    configs = read_config()
+    directories = read_config(section="directory")
+    configs = read_config(section="config_params")
+    evaluations = read_config(section="evaluations")
+    segment_video = string_to_bool(configs.get("segment_video", "False"))
+    segment_audio = string_to_bool(configs.get("segment_audio", "True"))
+    compute_embeddings = string_to_bool(configs.get("compute_embeddings", "False"))
+    specific_videos_str = configs.get("specific_videos", "")
     specific_videos = [int(x.strip()) for x in specific_videos_str.strip('[]').split(',')] if specific_videos_str and specific_videos_str != "None" else None
     try:
         print('Running rename_and_move')
@@ -40,7 +42,7 @@ def run_all_scripts():
             segment_averaging_main()
         print('Running move_and_group')
         move_and_group_main()
-        remove_incomplete_video_directories(completedirectory)
+        remove_incomplete_video_directories(evaluations)
         print('Running process_audio_files')
         whisper_main()
         print('Running convert_types')

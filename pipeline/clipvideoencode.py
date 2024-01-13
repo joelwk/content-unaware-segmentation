@@ -23,11 +23,12 @@ def change_directory(destination):
 def clip_encode(selected_config):
   base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
   clipencode_abs_path = os.path.join(base_path,'pipeline', 'clip-video-encode')
+  embeddings = os.path.join(selected_config['base_directory'], selected_config['embeddings'])
   with change_directory(clipencode_abs_path):
       from clip_video_encode import clip_video_encode
   clip_video_encode(
           f'{selected_config["base_directory"]}/keyframe_video_requirements.parquet',
-            selected_config["embeddings"],
+            embeddings,
             frame_workers=int(selected_config['frame_workers']),
             take_every_nth=int(selected_config['take_every_nth']),
             metadata_columns=['videoLoc', 'videoID', 'duration']
@@ -37,7 +38,6 @@ def main():
     directories = read_config(section="directory")
     base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     clipencode_path = os.path.join(base_path, 'pipeline','clip-video-encode')
-    install_requirements(clipencode_path)
     clip_encode(directories)
     return 0
 

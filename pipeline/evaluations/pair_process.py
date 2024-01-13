@@ -7,6 +7,8 @@ import re
 
 from evaluations.prepare import (
     model_clap, prepare_audio_labels,read_config, format_labels, softmax,get_all_video_ids,normalize_scores,get_video_ids)
+    
+from pipeline.utils import aggregate_and_save_npy
 
 def normalize_vectors(vectors):
     norms = np.linalg.norm(vectors, axis=1, keepdims=True)
@@ -116,6 +118,13 @@ def process_all_keyframes(video_base_path, audio_processed_base_path, output_bas
                         else:
                             print(f'Text file not found for keyframe {keyframe_id}, skipping: {text_file_path}')
 
+    def aggregate(paired_evaluations):
+        for dir_path in paired_evaluations:
+            if os.path.isdir(dir_path):
+                suffixes = ['audio_features.npy', 'image_features.npy']
+                output_path = os.path.join(dir_path, 'aggregated_features.npy')  # General name for output
+                aggregate_and_save_npy(dir_path, output_path, suffixes)
+
 def main():
     params = read_config(section="evaluations")
     config_params = read_config(section="config_params")
@@ -127,12 +136,13 @@ def main():
     for video in video_ids:
         audio_directory = os.path.join(params['outputs'], 'audio_evaluations', str(video))
         json_image_directory = os.path.join(params['outputs'], 'image_evaluations', str(video))
-        paired_evaluations = os.path.join(params['outputs'], 'paired_evaluations/')
+        paired_evaluations = os.path.join(params['outputs'], 'paired_evaluations')
         all_image = os.path.join(params['outputs'], 'image_evaluations')
         all_audio = os.path.join(params['outputs'], 'audio_evaluations')
         image_audio_pairs = os.path.join(params['outputs'], 'audio_evaluations')
         pair_and_classify_with_clap(audio_directory, json_image_directory, audio_directory)
         process_all_keyframes(all_image, all_audio, paired_evaluations)
+        aggregate(paired_evaluations)
 
 if __name__ == "__main__":
     main()

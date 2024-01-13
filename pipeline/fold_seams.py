@@ -20,6 +20,7 @@ def segment_video_using_keyframes_and_embeddings(video_path, keyframe_clip_outpu
         raise TypeError("keyframe_clip_output_dir must be a string.")
     if not isinstance(keyframe_timestamps, list):
         raise TypeError("keyframe_timestamps must be a list.")
+    directories = read_config(section="directory")
     thresholds = read_config(section="thresholds")
     video_key_frames = cv2.VideoCapture(video_path)
     writer = None
@@ -108,9 +109,10 @@ def segment_audio_using_keyframes(audio_path, audio_clip_output_dir, keyframe_ti
 
 def main(segment_video, segment_audio, specific_videos):
     params = read_config(section="directory")
+    base_directory = params['base_directory']
     thresholds = read_thresholds_config()  # Read thresholds for consistency
     # Determine which videos to process
-    video_ids = get_all_video_ids(params['originalframes']) if specific_videos is None else specific_videos
+    video_ids = get_all_video_ids(os.path.join(base_directory, params['original_frames'])) if specific_videos is None else specific_videos
     for vid in video_ids:
         audio_files, video_files, key_video_files, embedding_files, keyframe_data = setup_for_video_audio(vid, params)
         # Skip this video if setup_for_video_audio returned None (due to an exception)
@@ -118,35 +120,36 @@ def main(segment_video, segment_audio, specific_videos):
             continue
         keyframe_timestamps = [data['time_frame'] for data in keyframe_data.values()]
         if segment_video:
-            clip_output = f"./output/keyframe_clip/{vid}"
+            clip_output = os.path.join(base_directory, params['output'], params['keyframe_clip_output'], str(vid))
+            output_path = os.path.join(base_directory, params['keyframe_clip_embeddings_output'])
             os.makedirs(clip_output, exist_ok=True)
-            segment_video_using_keyframes_and_embeddings(key_video_files[0], clip_output, keyframe_timestamps, thresholds)
+            segment_video_using_keyframes_and_embeddings(key_video_files[0], output_path, clip_output, keyframe_timestamps, thresholds)
         if segment_audio:
-            audio_clip_output = f"./output/keyframe_audio_clip/{vid}"
-            os.makedirs(audio_clip_output, exist_ok=True)
-            segment_audio_using_keyframes(audio_files[0], audio_clip_output, keyframe_timestamps, thresholds, suffix_='_fromaudio_filtered')
+            os.makedirs(output_path, exist_ok=True)
+            segment_audio_using_keyframes(audio_files[0], output_path, keyframe_timestamps, thresholds, suffix_='_fromaudio_filtered')
 
 def setup_for_video_audio(vid, params):
     try:
         # Load files and data required for both video and audio segmentation
+        base_directory = params['base_directory']
         video_files = load_video_files(str(vid), params)
         key_video_files = load_key_video_files(str(vid), params)
         embedding_files = load_keyframe_embedding_files(str(vid), params)
         embedding_values = load_embedding_values(embedding_files)
         audio_files = load_audio_files(str(vid), params)
         # Read keyframe data
-        json_path = os.path.join(".", "output", "keyframes", str(vid), "keyframe_data.json")
+        json_path = os.path.join(".", base_directory, params['output'], params['keyframes'], str(vid), "keyframe_data.json")
         if not os.path.exists(json_path):
             raise FileNotFoundError(f"No keyframe_data.json found for video id {vid}.")
         with open(json_path, 'r') as f:
             keyframe_data = json.load(f)
-        audio_clip_output = f"./output/keyframe_audio_clip/{vid}"
+        audio_clip_output = os.path.join(base_directory, params['output'], params['keyframe_audio_clip_output'], str(vid))
         os.makedirs(audio_clip_output, exist_ok=True)
         return audio_files, video_files, key_video_files, embedding_files, keyframe_data
     except FileNotFoundError as e:
         print(e)
         # Removing directory associated with the video
-        video_dir = os.path.join(params['keyframe_outputs'], str(vid))
+        video_dir = os.path.join(base_directory, params['keyframe_output'], str(vid))
         if os.path.exists(video_dir):
             shutil.rmtree(video_dir)
             print(f"Removed directory {video_dir} due to missing keyframe data.")

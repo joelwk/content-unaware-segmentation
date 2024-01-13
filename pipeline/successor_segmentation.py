@@ -173,7 +173,7 @@ def is_clear_image(frame, lower_bound=10, upper_bound=245):
 def run_analysis(analyzer_class, specific_videos=None):
     thresholds = read_thresholds_config()  
     params = read_config(section="directory")
-    video_ids = ld.get_all_video_ids(params['originalframes'])
+    video_ids = ld.get_all_video_ids(params['original_frames'])
     if specific_videos is not None:
         video_ids = [vid for vid in video_ids if vid in specific_videos]
     for video in video_ids:

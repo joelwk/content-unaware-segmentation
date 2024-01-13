@@ -90,8 +90,8 @@ def process_videos_and_metadata(dataset_folder, emb_folder):
 
 def main():
     directories = read_config(section="directory")
-    dataset_folder = directories['keyframe_clips_output']
-    emb_folder = './keyframe_clip_embeddings'
+    dataset_folder = os.path.join(directories['base_directory'], directories['keyframe_clip_output'])
+    emb_folder = os.path.join(directories['base_directory'], directories['keyframe_clip_embeddings_output'])
     os.makedirs(dataset_folder, exist_ok=True)
     os.makedirs(emb_folder, exist_ok=True)
     process_videos_and_metadata(dataset_folder, emb_folder)

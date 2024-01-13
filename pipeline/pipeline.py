@@ -43,13 +43,14 @@ def parse_args():
     parser.add_argument('--mode', type=str, default='local', help='Execution mode: local or cloud')
     return parser.parse_args()
     
-def generate_config(base_directory):
+def generate_config(directories):
+    base_directory = directories['base_directory']
     return {
         "directory": base_directory,
-        "original_videos": f"{base_directory}/originalvideos",
-        "keyframe_videos": f"{base_directory}/keyframes",
-        "keyframe_embedding_output": f"{base_directory}/keyframeembeddings",
-        "config_yaml": f"{base_directory}/config.yaml"}
+        "original_videos": os.path.join(base_directory, directories['original_frames']),
+        "keyframe_videos": os.path.join(base_directory,directories['keyframes']),
+        "keyframe_embedding_output": os.path.join(base_directory,directories['embeddings']),
+        "config_yaml":  os.path.join(base_directory, "config.yaml")}
 
 def is_directory_empty(directory): 
     return not os.listdir(directory)
@@ -57,7 +58,7 @@ def is_directory_empty(directory):
 def delete_associated_files(video_id, params):
     try:
         video_id_str = str(video_id)
-        for directory_key in ['originalframes', 'keyframes', 'embeddings', 'keyframe_outputs', 'keyframe_audio_clip_output']:
+        for directory_key in [params['original_frames'], params['keyframes'], params['embeddings'], params['keyframe_audio_clip_output']]:
             directory = params.get(directory_key)
             if directory and os.path.exists(directory):
                 # Match files that exactly start with the video_id followed by non-numeric characters
@@ -150,7 +151,7 @@ def main():
     external_parquet = directories.get("external_parquet", None)
     try:
         args = parse_args()
-        config = {"local": generate_config(directories['base_directory'])}
+        config = {"local": generate_config(directories)}
         selected_config = config[args.mode]
         create_directories(selected_config)
         clipvideoencode_repo_url = "https://github.com/iejMac/clip-video-encode.git"
@@ -167,6 +168,8 @@ def main():
             prepare_dataset_requirements(directories["base_directory"], external_parquet)
         else:
             # If videos are already downloaded, install clip-video-encode package to start segmentation
+            output_parquet = os.path.join(directories["base_directory"],'dataset_requirements.parquet')
+            create_parquet_from_videos = string_to_bool(os.path.join(directories["base_directory"], directories["original_frames"]), output_parquet)
             install_requirements(clipvideoencode_requirements_directory)
     except Exception as e:
         print(f"An exception occurred during pip install: {e}")
