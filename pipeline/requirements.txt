@@ -21,7 +21,7 @@ torchaudio
 soundfile
 omegaconf
 einops
-transformers
+transformers==4.30.0
 Pillow
 accelerate
 bitsandbytes

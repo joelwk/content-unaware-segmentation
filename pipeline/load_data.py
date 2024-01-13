@@ -8,19 +8,19 @@ import pandas as pd
 from sklearn.preprocessing import normalize
 
 def load_video_files(vid, params):
-    return sorted(glob.glob(f"{params['original_frames']}/{vid}.mp4"))
+    return sorted(glob.glob(os.path.join(params['base_directory'], params['original_frames'], f"{vid}.mp4")))
 
 def load_audio_files(vid, params):
-    return sorted(glob.glob(f"{params['original_frames']}/{vid}.m4a"))
+    return sorted(glob.glob(os.path.join(params['base_directory'], params['original_frames'], f"{vid}.m4a")))
 
 def load_key_video_files(vid, params):
-    return sorted(glob.glob(f"{params['keyframes']}/{vid}.mp4"))
+    return sorted(glob.glob(os.path.join(params['base_directory'], params['keyframes'], f"{vid}.mp4")))
 
 def load_embedding_files(vid, params):
-    return sorted(glob.glob(f"{params['originalembeddings']}/{vid}.npy"))
+    return sorted(glob.glob(os.path.join(params['base_directory'], params['originalembeddings'], f"{vid}.npy")))
 
 def load_keyframe_embedding_files(vid, params):
-    return sorted(glob.glob(f"{params['embeddings']}/{vid}.npy"))
+    return sorted(glob.glob(os.path.join(params['base_directory'], params['embeddings'], f"{vid}.npy")))
     
 def load_embedding_values(embedding_files):
     if not embedding_files:

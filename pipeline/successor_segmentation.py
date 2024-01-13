@@ -178,7 +178,7 @@ def run_analysis(analyzer_class, specific_videos=None):
         video_ids = [vid for vid in video_ids if vid in specific_videos]
     for video in video_ids:
         video = str(video)
-        save_dir = os.path.join(params['base_directory'],params['output'], params['keyframe_output'], video)
+        save_dir = os.path.join(params['base_directory'], params['keyframes'], video)
         try:
             keyframe_embedding_files = ld.load_keyframe_embedding_files(video, params)
             if not keyframe_embedding_files:
