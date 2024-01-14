@@ -7,15 +7,16 @@ import re
 
 from evaluations.prepare import (
     model_clap, prepare_audio_labels,read_config, format_labels, softmax,get_all_video_ids,normalize_scores,get_video_ids)
-    
+
+evaluations = read_config(section="evaluations")
+labels = read_config("labels")
+config_params = read_config(section="config_params")
 
 def normalize_vectors(vectors):
     norms = np.linalg.norm(vectors, axis=1, keepdims=True)
     return vectors / norms
 
 def pair_and_classify_with_clap(audio_dir, json_dir, output_dir):
-    params = read_config(section="evaluations")
-    labels = read_config("labels")
     model = model_clap()
     multioutput_model, model_order_to_group_name, dfmetrics = prepare_audio_labels()
     os.makedirs(output_dir, exist_ok=True)
@@ -41,7 +42,7 @@ def pair_and_classify_with_clap(audio_dir, json_dir, output_dir):
                 audio_embed = np.squeeze(model.get_audio_embedding_from_filelist([audio_file], use_tensor=False))
                 audio_embed_normalized = normalize_vectors(audio_embed.reshape(1, -1))
                 similarity_scores = np.abs(audio_embed_normalized @ text_features.T)
-                similarity_probs = softmax(float(params['scalingfactor']) * audio_embed_normalized @ text_features.T)
+                similarity_probs = softmax(float(evaluations['scalingfactor']) * audio_embed_normalized @ text_features.T)
                 similarity_probs = similarity_probs.tolist()
                 sorted_emotion_score_pairs = {k: v for k, v in sorted({format_labels(labels, 'emotions')[i]: float(similarity_scores[0][i]) for i in range(len(format_labels(labels, 'emotions')))}.items(), key=lambda item: item[1], reverse=True)}
                 sorted_emotion_probs_pairs = {k: v for k, v in sorted({format_labels(labels, 'emotions')[i]: float(similarity_probs[0][i]) for i in range(len(format_labels(labels, 'emotions')))}.items(), key=lambda item: item[1], reverse=True)}
@@ -125,20 +126,18 @@ def process_all_keyframes(video_base_path, audio_processed_base_path, output_bas
                 aggregate_and_save_npy(dir_path, output_path, suffixes)
 
 def main():
-    params = read_config(section="evaluations")
-    config_params = read_config(section="config_params")
     if config_params['mode'] == 'directory':
-        video_ids = get_all_video_ids(params['completedatasets'])
+        video_ids = get_all_video_ids(evaluations['completedatasets'])
     else:
         config_params['mode'] == 'wds'
-        video_ids = get_video_ids(os.path.join(params['output'], 'image_evaluations'))
+        video_ids = get_video_ids(os.path.join(evaluations['output'], 'image_evaluations'))
     for video in video_ids:
-        audio_directory = os.path.join(params['output'], 'audio_evaluations', str(video))
-        json_image_directory = os.path.join(params['output'], 'image_evaluations', str(video))
-        paired_evaluations = os.path.join(params['output'], 'paired_evaluations')
-        all_image = os.path.join(params['output'], 'image_evaluations')
-        all_audio = os.path.join(params['output'], 'audio_evaluations')
-        image_audio_pairs = os.path.join(params['output'], 'audio_evaluations')
+        audio_directory = os.path.join(evaluations['output'], 'audio_evaluations', str(video))
+        json_image_directory = os.path.join(evaluations['output'], 'image_evaluations', str(video))
+        paired_evaluations = os.path.join(evaluations['output'], 'paired_evaluations')
+        all_image = os.path.join(evaluations['output'], 'image_evaluations')
+        all_audio = os.path.join(evaluations['output'], 'audio_evaluations')
+        image_audio_pairs = os.path.join(evaluations['output'], 'audio_evaluations')
         pair_and_classify_with_clap(audio_directory, json_image_directory, audio_directory)
         process_all_keyframes(all_image, all_audio, paired_evaluations)
 

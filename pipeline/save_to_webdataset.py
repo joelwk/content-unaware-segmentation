@@ -7,6 +7,9 @@ from io import BytesIO
 import ast
 from pipeline import read_config
 
+directories = read_config(section="directory")
+evaluations = read_config(section="evaluations")
+
 def datasets_to_webdataset_segmentation(root_folder, output_folder, shard_size=1e9):
     dataset_folders = sorted(glob.glob(f"{root_folder}/*"))
     pattern = os.path.join(output_folder, "completed_datasets-%06d.tar")
@@ -76,16 +79,12 @@ def datasets_to_webdataset_evaluations(root_folder, output_folder, shard_size=1e
             sink.write(sample)
 
 def package_datasets_to_webdataset_evaluations():
-    directories = read_config(section="directory")
-    evaluations = read_config(section="evaluations")
     root_folder = evaluations['output']
     output_folder = directories['video_wds_output']
     os.makedirs(output_folder, exist_ok=True)
     datasets_to_webdataset_evaluations(root_folder, output_folder)
 
 def package_datasets_to_webdataset_segmentation():
-    directories = read_config(section="directory")
-    evaluations = read_config(section="evaluations")
     root_folder = evaluations['completedatasets']
     output_folder = directories['video_wds_output']
     os.makedirs(output_folder, exist_ok=True)

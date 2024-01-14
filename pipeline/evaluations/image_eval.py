@@ -26,9 +26,12 @@ from evaluations.prepare import (
     get_embeddings, model_clip, normalize_scores, softmax, sort_and_store_scores, load_key_image_files, 
     load_key_audio_files, get_all_video_ids,process_files, move_paired
 )
-    
+
+thresholds = read_config(section="thresholds")
+evaluations = read_config(section="evaluations")
+config_params = read_config(section="config_params")
+
 def is_good_image(is_person, face_probs, orientation_probs, engagement_probs):
-    thresholds = read_config(section="thresholds")
     # Define thresholds
     is_person_threshold = float(thresholds['is_person_threshold']) # High probability of the subject being a person
     single_face_threshold = float(thresholds['single_face_threshold'])  # High probability of there being only one face
@@ -50,19 +53,18 @@ def zeroshot_classifier(image_path, video_identifier, output_dir, key=None):
         image_path = Image.open(image_path)
         output_dir = os.path.join(output_dir, str(video_identifier))
 
-    params = read_config(section="evaluations")
     labels = read_config("labels")
     model, preprocess_train, preprocess_val, tokenizer = model_clip()
     get_embeddings(model, tokenizer)
 
     # Form the paths to the embeddings
-    text_features_path = os.path.join(params['embeddings'], 'text_features.npy')
-    text_features_if_person_path = os.path.join(params['embeddings'], 'text_features_if_person.npy')
-    text_features_type_person_path = os.path.join(params['embeddings'], 'text_features_type_person.npy')
-    text_features_if_number_of_faces_path = os.path.join(params['embeddings'], 'text_features_number_of_faces.npy')
-    text_features_orientation_path = os.path.join(params['embeddings'], 'text_features_orientation.npy')
-    text_features_if_engaged_path = os.path.join(params['embeddings'], 'text_features_if_engaged.npy')
-    text_features_valence_path = os.path.join(params['embeddings'], 'text_valence.npy')
+    text_features_path = os.path.join(evaluations['embeddings'], 'text_features.npy')
+    text_features_if_person_path = os.path.join(evaluations['embeddings'], 'text_features_if_person.npy')
+    text_features_type_person_path = os.path.join(evaluations['embeddings'], 'text_features_type_person.npy')
+    text_features_if_number_of_faces_path = os.path.join(evaluations['embeddings'], 'text_features_number_of_faces.npy')
+    text_features_orientation_path = os.path.join(evaluations['embeddings'], 'text_features_orientation.npy')
+    text_features_if_engaged_path = os.path.join(evaluations['embeddings'], 'text_features_if_engaged.npy')
+    text_features_valence_path = os.path.join(evaluations['embeddings'], 'text_valence.npy')
 
     # Load embeddings
     text_features = np.load(text_features_path)
@@ -87,15 +89,15 @@ def zeroshot_classifier(image_path, video_identifier, output_dir, key=None):
     image_features /= np.linalg.norm(image_features, axis=-1, keepdims=True)
     
     # Calculate probabilities for different categories using softma
-    is_person_probs = softmax(float(params['scalingfactor']) * normalize_scores(image_features @ text_features_if_person.T))
-    type_person_probs = softmax(float(params['scalingfactor']) * image_features @ text_features_type_person.T)
-    face_probs = softmax(float(params['scalingfactor']) * normalize_scores(image_features @ text_features_if_number_of_faces.T))
-    orientation_probs = softmax(float(params['scalingfactor']) * normalize_scores(image_features @ text_features_orientation.T))
-    engagement_probs = softmax(float(params['scalingfactor']) * normalize_scores(image_features @ text_features_if_engaged.T))
-    text_probs_emotions = softmax(float(params['scalingfactor']) * normalize_scores(image_features @ text_features.T))
+    is_person_probs = softmax(float(evaluations['scalingfactor']) * normalize_scores(image_features @ text_features_if_person.T))
+    type_person_probs = softmax(float(evaluations['scalingfactor']) * image_features @ text_features_type_person.T)
+    face_probs = softmax(float(evaluations['scalingfactor']) * normalize_scores(image_features @ text_features_if_number_of_faces.T))
+    orientation_probs = softmax(float(evaluations['scalingfactor']) * normalize_scores(image_features @ text_features_orientation.T))
+    engagement_probs = softmax(float(evaluations['scalingfactor']) * normalize_scores(image_features @ text_features_if_engaged.T))
+    text_probs_emotions = softmax(float(evaluations['scalingfactor']) * normalize_scores(image_features @ text_features.T))
     text_score_emotions = image_features @ text_features.T
-    text_probs_valence = softmax(float(params['scalingfactor']) * image_features @ text_features_valence.T)
-    perform_face_check = params.get('face_detected_in_video_or', 'False').lower() == 'true'
+    text_probs_valence = softmax(float(evaluations['scalingfactor']) * image_features @ text_features_valence.T)
+    perform_face_check = evaluations.get('face_detected_in_video_or', 'False').lower() == 'true'
     face_detected = True
     if not perform_face_check:
         face_detected = is_good_image(is_person_probs[0], face_probs[0], orientation_probs[0], engagement_probs[0])
@@ -127,42 +129,40 @@ def zeroshot_classifier(image_path, video_identifier, output_dir, key=None):
     return face_detected_python_bool
 
 def process_from_directory():
-    params = read_config(section="evaluations")
-    video_ids = get_all_video_ids(params['completedatasets'])
+    video_ids = get_all_video_ids(evaluations['completedatasets'])
     for video in video_ids:
         try:
-            face_detected_in_video = params.get('face_detected_in_video_or', 'False').lower() == 'true'
-            keyframes = load_key_image_files(video, params)
+            face_detected_in_video = evaluations.get('face_detected_in_video_or', 'False').lower() == 'true'
+            keyframes = load_key_image_files(video, evaluations)
             for keyframe in keyframes:
-                if zeroshot_classifier(keyframe, video, os.path.join(params['output'], "image_evaluations"), key=None):
+                if zeroshot_classifier(keyframe, video, os.path.join(evaluations['output'], "image_evaluations"), key=None):
                     face_detected_in_video = True
                 if not face_detected_in_video:  
-                    video_dir = os.path.join(params['output'], "image_evaluations", str(video))
+                    video_dir = os.path.join(evaluations['output'], "image_evaluations", str(video))
                     if os.path.exists(video_dir):
                         shutil.rmtree(video_dir)
-                        video__original_dir = os.path.join(params['completedatasets'], str(video))
+                        video__original_dir = os.path.join(evaluations['completedatasets'], str(video))
                         shutil.rmtree(video__original_dir)
                         print(f"No faces detected in any keyframes of video {video}. Directory {video_dir} removed.")
                     continue
-            image_dir = os.path.join(params['output'], "image_evaluations", str(video))
-            output_dir = os.path.join(params['output'], "image_audio_pairs", str(video))
-            audio_dir = os.path.join(params['completedatasets'], str(video), "keyframe_audio_clips")
+            image_dir = os.path.join(evaluations['output'], "image_evaluations", str(video))
+            output_dir = os.path.join(evaluations['output'], "image_audio_pairs", str(video))
+            audio_dir = os.path.join(evaluations['completedatasets'], str(video), "keyframe_audio_clips")
             process_keyframe_audio_pairs(image_dir, audio_dir, output_dir)
         except Exception as e:
             print(f"Failed to process images and pair with audio for video {video}: {e}")
 
 def process_from_wds():
-    params = read_config(section="evaluations")
-    dataset_paths =  glob.glob(f"{params['wds_dir']}/completed_datasets-*.tar")
+    dataset_paths =  glob.glob(f"{evaluations['wds_dir']}/completed_datasets-*.tar")
     dataset = wds.WebDataset(dataset_paths).map(process_files)
     whisper_segments = {}
     text_segments = {}
     #TODO: Add checks to avoid reproreprocessing
     for sample in dataset:
         video_id = sample['__key__'].split('/')[0]
-        image_dir = os.path.join(params['output'], "image_evaluations", video_id)
-        output_dir = os.path.join(params['output'], "image_audio_pairs", video_id)
-        face_detected_in_video = params.get('face_detected_in_video_or', 'False').lower() == 'true'
+        image_dir = os.path.join(evaluations['output'], "image_evaluations", video_id)
+        output_dir = os.path.join(evaluations['output'], "image_audio_pairs", video_id)
+        face_detected_in_video = evaluations.get('face_detected_in_video_or', 'False').lower() == 'true'
         for key, value in sample.items():
             if key.endswith('mp3') and isinstance(value, AudioSegment):
                 segment_key = sample['__key__']
@@ -196,10 +196,9 @@ def process_from_wds():
                             print(f"Paired keyframe {str(keyframe_id)} with its whisper segment and text")
                             
 def main():
-    params = read_config(section="config_params")
-    if params['mode'] == 'directory':
+    if config_params['mode'] == 'directory':
         process_from_directory()
-    elif params['mode'] == 'wds':
+    elif config_params['mode'] == 'wds':
         process_from_wds()
 
 if __name__ == '__main__':

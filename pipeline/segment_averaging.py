@@ -6,6 +6,8 @@ import numpy as np
 from clip_video_encode import clip_video_encode
 from pipeline import read_config
 
+directories = read_config(section="directory")
+
 def get_video_duration(video_path):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -89,13 +91,11 @@ def process_videos_and_metadata(dataset_folder, emb_folder):
             os.remove(emb_file_path)
 
 def main():
-    directories = read_config(section="directory")
     dataset_folder = os.path.join(directories['base_directory'], directories['keyframe_clip_output'])
     emb_folder = os.path.join(directories['base_directory'], directories['keyframe_clip_embeddings_output'])
     os.makedirs(dataset_folder, exist_ok=True)
     os.makedirs(emb_folder, exist_ok=True)
     process_videos_and_metadata(dataset_folder, emb_folder)
-
 if __name__ == "__main__":
     main()
 

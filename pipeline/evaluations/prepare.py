@@ -36,8 +36,9 @@ except ImportError as e:
     else:
         print("Could not find the path to hook.py in the ImportError traceback.")
         
-base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 config_path = f'{base_path}/config.ini'
+evaluations = read_config('evaluations')
+model_config = read_config('evaluations', config_path)
 
 def read_config(section, config_path=config_path):
     if not os.path.exists(config_path):
@@ -148,7 +149,6 @@ def get_model_device(model):
     return next(model.parameters()).device
 
 def model_clip(config_path=config_path):
-    model_config = read_config('evaluations', config_path)
     model_name = model_config['model_clip']
     model_clip, preprocess_train, preprocess_val = open_clip.create_model_and_transforms(model_name)
     tokenizer = open_clip.get_tokenizer(model_name)
@@ -159,7 +159,6 @@ def model_clip(config_path=config_path):
     return model_clip, preprocess_train, preprocess_val, tokenizer
 
 def model_clap(config_path=config_path):
-    model_config = read_config('evaluations', config_path)
     if not os.path.isfile(model_config['model_clap_checkpoint'].split('/')[-1]):
         subprocess.run(['wget', model_config['model_clap_checkpoint']])
     model_clap = laion_clap.CLAP_Module(enable_fusion=False, amodel=model_config['model_clap'])
@@ -200,8 +199,6 @@ def get_audio_embeddings(audio_path, model_clap):
     return audio_files, np.vstack(embeddings)
 
 def get_embeddings(model_clip, tokenizer, config_path=config_path):
-    evals = read_config('evaluations')
-    labels = read_config('labels')
     emotions = format_labels(labels, 'emotions')
     check_if_person_list = format_labels(labels, 'checkifperson')
     number_of_faces_list = format_labels(labels, 'numberoffaces')
@@ -209,13 +206,13 @@ def get_embeddings(model_clip, tokenizer, config_path=config_path):
     orientation_labels_list = format_labels(labels, 'orientationlabels')
     check_type_person_list = format_labels(labels, 'checktypeperson')
     valence_list = format_labels(labels, 'valence')
-    text_features = generate_embeddings(tokenizer, model_clip, emotions, f"{evals['embeddings']}/text_features.npy")
-    text_features_if_person = generate_embeddings(tokenizer, model_clip, check_if_person_list, f"{evals['embeddings']}/text_features_if_person.npy")
-    text_features_type_person = generate_embeddings(tokenizer, model_clip, check_type_person_list, f"{evals['embeddings']}/text_features_type_person.npy")
-    text_features_if_number_of_faces = generate_embeddings(tokenizer, model_clip, number_of_faces_list, f"{evals['embeddings']}/text_features_number_of_faces.npy")
-    text_features_orientation = generate_embeddings(tokenizer, model_clip, orientation_labels_list, f"{evals['embeddings']}/text_features_orientation.npy")
-    text_features_if_engaged = generate_embeddings(tokenizer, model_clip, engagement_labels_list, f"{evals['embeddings']}/text_features_if_engaged.npy")
-    text_features_valence = generate_embeddings(tokenizer, model_clip, valence_list, f"{evals['embeddings']}/text_valence.npy")
+    text_features = generate_embeddings(tokenizer, model_clip, emotions, f"{evaluations['embeddings']}/text_features.npy")
+    text_features_if_person = generate_embeddings(tokenizer, model_clip, check_if_person_list, f"{evaluations['embeddings']}/text_features_if_person.npy")
+    text_features_type_person = generate_embeddings(tokenizer, model_clip, check_type_person_list, f"{evaluations['embeddings']}/text_features_type_person.npy")
+    text_features_if_number_of_faces = generate_embeddings(tokenizer, model_clip, number_of_faces_list, f"{evaluations['embeddings']}/text_features_number_of_faces.npy")
+    text_features_orientation = generate_embeddings(tokenizer, model_clip, orientation_labels_list, f"{evaluations['embeddings']}/text_features_orientation.npy")
+    text_features_if_engaged = generate_embeddings(tokenizer, model_clip, engagement_labels_list, f"{evaluations['embeddings']}/text_features_if_engaged.npy")
+    text_features_valence = generate_embeddings(tokenizer, model_clip, valence_list, f"{evaluations['embeddings']}/text_valence.npy")
 
 def process_files(sample):
     result = {}

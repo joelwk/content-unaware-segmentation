@@ -14,6 +14,8 @@ import cv2
 import os
 import pandas as pd
 
+directories = read_config(section="directory")
+
 def create_parquet_from_videos(video_dir, parquet_file):
     data = []
     for index, file_name in enumerate(os.listdir(video_dir)):
@@ -26,7 +28,7 @@ def create_parquet_from_videos(video_dir, parquet_file):
     df.to_parquet(parquet_file)
     print(f"Parquet file saved to {parquet_file}")
 
-def run_subset_video2dataset(directories):
+def run_subset_video2dataset():
     base_directory = directories['base_directory']
     video_files = glob.glob(os.path.join(base_directory, directories["original_frames"], '**/*.mp4'), recursive=True)
     base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -49,8 +51,8 @@ def run_subset_video2dataset(directories):
         print("Return code:", result.returncode)
         print("STDOUT:", result.stdout)
 
-def load_dataset_requirements(directory):
-    return pd.read_parquet(f"{directory}/dataset_requirements.parquet").to_dict(orient='records')
+def load_dataset_requirements():
+    return pd.read_parquet(f"{directories}/dataset_requirements.parquet").to_dict(orient='records')
 
 def collect_video_metadata(video_files, output):
     keyframe_video_locs = []
@@ -102,7 +104,7 @@ def fix_codecs_in_directory(directories):
         except Exception as e:  
             print(f"An unexpected error occurred: {e}")
 
-def segment_key_frames_in_directory(directories):
+def segment_key_frames_in_directory():
     base_directory = directories['base_directory']
     video_files = glob.glob(os.path.join(base_directory, directories["original_frames"], '**/*.mp4'), recursive=True)
     for video_file in video_files:
@@ -117,15 +119,15 @@ def segment_key_frames_in_directory(directories):
         else:
             print(f"Failed to segment key frames for {video_id}. Error: {stderr.decode('utf8')}")
 
-def save_metadata_to_parquet(keyframe_video_locs, original_video_locs, directory):
+def save_metadata_to_parquet(keyframe_video_locs, original_video_locs):
     keyframe_video_df = pd.DataFrame(keyframe_video_locs)
     original_video_df = pd.DataFrame(original_video_locs)
     keyframe_video_df['duration'] = keyframe_video_df['duration'].astype(float)
     original_video_df['duration'] = original_video_df['duration'].astype(float)
-    keyframe_video_df.to_parquet(f'{directory}/keyframe_video_requirements.parquet', index=False)
-    original_video_df.to_parquet(f'{directory}/original_video_requirements.parquet', index=False)
+    keyframe_video_df.to_parquet(f'{directories}/keyframe_video_requirements.parquet', index=False)
+    original_video_df.to_parquet(f'{directories}/original_video_requirements.parquet', index=False)
 
-def prepare_clip_encode(directories):
+def prepare_clip_encode():
     base_directory = directories['base_directory']
     dataset_requirements = load_dataset_requirements(base_directory)
     df = pd.DataFrame(dataset_requirements)
@@ -154,7 +156,6 @@ def run_video2dataset_with_yt_dlp(directories):
         print("STDOUT:", result.stdout)
         
 def main():
-    directories = read_config(section="directory")
     if directories['video_load'] == 'directory':
         #run_subset_video2dataset(directories)
         prepare_clip_encode(directories)

@@ -25,6 +25,9 @@ import torch
 from pydub import AudioSegment
 from transformers import pipeline
 
+evaluations = read_config(section="evaluations")    
+config_params = read_config(section="config_params")
+
 def convert_audio_files(input_directory, output_directory, output_format="flac"):
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
@@ -62,7 +65,6 @@ def segment_audio_using_keyframes(audio_path, audio_clip_output_dir, keyframe_da
         json.dump(output_aligned, f)
 
 def audio_pipeline(audio_path, audio_clip_output_dir, keyframe_data, duration):
-    evaluations = read_config(section="evaluations")
     # Load the audio file using pydub
     audio = AudioSegment.from_file(audio_path)
     try:
@@ -95,7 +97,6 @@ def audio_pipeline(audio_path, audio_clip_output_dir, keyframe_data, duration):
         print(f"Error in audio_pipeline: {e}")
 
 def full_audio_transcription_pipeline(audio_path, output_dir):
-    evaluations = read_config(section="evaluations")
     try:
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
         pipe = pipeline(evaluations['pipeline_function'],
@@ -138,8 +139,6 @@ def write_transcripts_for_keyframes(transcripts, keyframe_timestamps, yt_output_
         print(f"Transcripts for keyframe {segment_idx} written to {yt_output_dir}/keyframe_{segment_idx}_yt_transcripts.txt")
 
 def process_audio_files():
-    evaluations = read_config(section="evaluations")
-    config_params = read_config(section="config_params")
     base_path = evaluations['completedatasets']
     for video_dir in os.listdir(base_path):
         n = video_dir
@@ -183,12 +182,12 @@ def process_individual_audio_file(audio_file,audio_path,initial_input_directory,
                     yt_transcripts = yt_transcripts['yt_meta_dict']['subtitles']
                     with open(keyframe_timeframes_path, 'r') as kf:
                         keyframe_timeframes = json.load(kf)
-                    
                     write_transcripts_for_keyframes(yt_transcripts, keyframe_timeframes, yt_output_dir)
                 else:
                     print(f"Unexpected JSON structure in {yt_transcripts_path}")
         else:
             print(f"Required files for YT transcripts not found. Check paths: {yt_transcripts_path}, {keyframe_timeframes_path}")
+
 def process_entire_audio(audio_path, full_audio_clip_output_dir, evaluations):
     if not os.path.exists(full_audio_clip_output_dir):
         os.makedirs(full_audio_clip_output_dir)

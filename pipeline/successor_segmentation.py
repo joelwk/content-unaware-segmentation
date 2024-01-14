@@ -18,6 +18,10 @@ from pipeline import parse_args, generate_config,delete_associated_files,read_co
 from segmentation_processing import get_segmented_and_filtered_frames, calculate_successor_distance, check_for_new_segment, read_thresholds_config
 import load_data as ld 
 
+thresholds = read_thresholds_config()  
+directories = read_config(section="directory")
+config_params = read_config(section="config_params")
+
 class SegmentSuccessorAnalyzer:
     def __init__(self, embedding_values: np.ndarray, max_segment_duration: Optional[int] = None) -> None:
         self.thresholds = read_thresholds_config(section="thresholds")
@@ -27,8 +31,6 @@ class SegmentSuccessorAnalyzer:
         self.max_segment_duration = int(self.thresholds['max_duration']) if max_segment_duration is None else max_segment_duration
         
     def run(self, video_files: List[str], thresholds: Dict[str, Optional[float]], keyframe_files: List[str], save_dir: str) -> Tuple[List[np.ndarray], List[float]]:
-        directories = read_config(section="directory")
-        config_params = read_config(section="config_params")
         frame_embedding_pairs, timestamps = get_segmented_and_filtered_frames(video_files, keyframe_files, self.embedding_values, thresholds)
         if len(frame_embedding_pairs) < 2:
             video_id = int(os.path.basename(video_files[0]).split('.')[0])
@@ -168,23 +170,21 @@ def is_clear_image(frame, lower_bound=10, upper_bound=245):
     return lower_bound < mean_intensity < upper_bound
 
 def run_analysis(analyzer_class, specific_videos=None):
-    thresholds = read_thresholds_config()  
-    params = read_config(section="directory")
-    video_ids = ld.get_all_video_ids(os.path.join(params['base_directory'], params['original_frames']))
+    video_ids = ld.get_all_video_ids(os.path.join(directories['base_directory'], directories['original_frames']))
     if specific_videos is not None:
         video_ids = [vid for vid in video_ids if vid in specific_videos]
     for video in video_ids:
         video = str(video)
-        save_dir = os.path.join(params['base_directory'], params['keyframes'], video)
+        save_dir = os.path.join(directories['base_directory'], directories['keyframes'], video)
         try:
-            keyframe_embedding_files = ld.load_keyframe_embedding_files(video, params)
+            keyframe_embedding_files = ld.load_keyframe_embedding_files(video, directories)
             if not keyframe_embedding_files:
                 raise ValueError(f"No embedding files provided for video {video}.")
             embedding_values = ld.load_embedding_values(keyframe_embedding_files)
-            video_files = ld.load_video_files(video, params)
+            video_files = ld.load_video_files(video, directories)
             if not video_files:
                 raise ValueError(f"No video files found for video {video}.")
-            key_video_files = ld.load_key_video_files(video, params)
+            key_video_files = ld.load_key_video_files(video, directories)
             os.makedirs(save_dir, exist_ok=True)
             analyzer = analyzer_class(embedding_values, thresholds['max_duration'])
             analyzer.run(video_files, thresholds, key_video_files, save_dir)

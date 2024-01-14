@@ -17,6 +17,9 @@ from evaluations.prepare import (
     load_key_audio_files,get_all_video_ids,prepare_audio_labels,get_audio_embeddings,get_video_ids
 )
 
+evaluations = read_config(section="evaluations")
+config_params = read_config(section="config_params")
+
 def get_audio_duration(audio_file):
     audio = AudioSegment.from_file(audio_file)
     return len(audio)
@@ -134,7 +137,6 @@ def find_and_move_highest_scoring_files(json_dir, processed_dir):
       
 def zeroshot_classifier_audio(output_dir):
     try:
-        params = read_config(section="evaluations")
         model = model_clap()
         multioutput_model, model_order_to_group_name, dfmetrics = prepare_audio_labels()
         audio_files, np_embeddings = get_audio_embeddings(output_dir, model)
@@ -147,7 +149,7 @@ def zeroshot_classifier_audio(output_dir):
         for _, row in dfmetrics.iterrows():
             order = row["model_order"]
             threshold = row["threshold"]
-            all_preds[:, order] = (all_probs[:, order] >= float(params['audio_threshold'])).astype(np.int8)
+            all_preds[:, order] = (all_probs[:, order] >= float(evaluations['audio_threshold'])).astype(np.int8)
         for i, input_file in enumerate(audio_files):
             detections = np.where(all_preds[i, :])[0]
             groups_detected = [model_order_to_group_name[x] for x in detections]
@@ -169,19 +171,17 @@ def zeroshot_classifier_audio(output_dir):
         print(f"An error occurred in zeroshot_classifier_audio for video {output_dir.split('/')[-1]}: {e}")
 
 def main():
-    params = read_config(section="evaluations")
-    config_params = read_config(section="config_params")
     if config_params['mode'] == 'directory':
-        video_ids = get_all_video_ids(params['completedatasets'])
+        video_ids = get_all_video_ids(evaluations['completedatasets'])
     else:
         config_params['mode'] == 'wds'
-        video_ids = get_video_ids(os.path.join(params['output'], 'image_evaluations'))
+        video_ids = get_video_ids(os.path.join(evaluations['output'], 'image_evaluations'))
     for video in video_ids:
         try:
-            in_path = os.path.join(params['output'],'image_audio_pairs', str(video))
-            output_path = os.path.join(params['output'],'audio_evaluations', str(video), 'audio_processed')
-            max_duration_ms = int(params['max_duration_ms'] * 1000)
-            final_audio = os.path.join(params['output'], 'audio_evaluations', str(video))
+            in_path = os.path.join(evaluations['output'],'image_audio_pairs', str(video))
+            output_path = os.path.join(evaluations['output'],'audio_evaluations', str(video), 'audio_processed')
+            max_duration_ms = int(evaluations['max_duration_ms'] * 1000)
+            final_audio = os.path.join(evaluations['output'], 'audio_evaluations', str(video))
             convert_flac_to_mp3(output_path)
             separate_audio(in_path, output_path, max_duration_ms)
             reorganize_and_move_vocals(output_path)

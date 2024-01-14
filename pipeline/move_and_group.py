@@ -3,6 +3,8 @@ import glob
 import shutil
 from pipeline import read_config, is_directory_empty
 
+directories = read_config(section="directory")
+
 def move_and_group_files(directories):
     # Define source directories for various categories of files
     base_directory = directories['base_directory']
@@ -50,21 +52,19 @@ def move_and_group_files(directories):
                 shutil.move(file_path, new_file_path)
                 print(f"Moved {file_path} to {new_file_path}")
 
-def cleanup_unwanted_dirs(directory, unwanted_dirs=None):
+def cleanup_unwanted_dirs(directories, unwanted_dirs=None):
     if unwanted_dirs:
         for unwanted_dir in unwanted_dirs:
-            path_to_remove = os.path.join(directory, unwanted_dir)
+            path_to_remove = os.path.join(directories, unwanted_dir)
             if os.path.exists(path_to_remove):
                 shutil.rmtree(path_to_remove)
                 print(f"Removed {path_to_remove}")
     else:
-        if os.path.exists(directory):
-            shutil.rmtree(directory)
-            print(f"Removed entire directory: {directory}")
+        if os.path.exists(directories):
+            shutil.rmtree(directories)
+            print(f"Removed entire directory: {directories}")
 
 def main():
-    directories = read_config()
-    evaluations = read_config(section="evaluations")
     move_and_group_files(directories)
     cleanup_unwanted_dirs(evaluations['completedatasets'], ['00000_stats', '00000'])
     cleanup_unwanted_dirs(directories['base_directory'])  

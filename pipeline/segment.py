@@ -9,6 +9,11 @@ import os
 import shutil
 from pipeline import read_config, string_to_bool
 
+configs = read_config()
+directories = read_config(section="directory")
+configs = read_config(section="config_params")
+evaluations = read_config(section="evaluations")
+
 def remove_incomplete_video_directories(directories, completedirectory):
     required_dirs = [directories['keyframe_audio_clip_output'], directories['embeddings'], directories['keyframes'], directories['original_frames']]
     base_dir = completedirectory['completedatasets']
@@ -22,10 +27,6 @@ def remove_incomplete_video_directories(directories, completedirectory):
             print(f"Removed incomplete or empty directory: {video_path}")
 
 def run_all_scripts():
-    configs = read_config()
-    directories = read_config(section="directory")
-    configs = read_config(section="config_params")
-    evaluations = read_config(section="evaluations")
     segment_video = string_to_bool(configs.get("segment_video", "False"))
     segment_audio = string_to_bool(configs.get("segment_audio", "True"))
     compute_embeddings = string_to_bool(configs.get("compute_embeddings", "False"))
@@ -42,7 +43,7 @@ def run_all_scripts():
             segment_averaging_main()
         print('Running move_and_group')
         move_and_group_main()
-        remove_incomplete_video_directories(directories,evaluations)
+        remove_incomplete_video_directories()
         print('Running process_audio_files')
         whisper_main()
         print('Running convert_types')

@@ -13,6 +13,8 @@ from pipeline import delete_associated_files, parse_args, generate_config
 import load_data as ld
 from pipeline import read_config
 
+directories = read_config(section="directory")
+
 def read_thresholds_config(section: str = 'thresholds') -> dict:
     params = read_config(section=section)
     return {key: None if params.get(key) in [None, 'None'] else float(params.get(key)) 
@@ -67,7 +69,6 @@ def calculate_video_frame_phash_similarity(frame1: np.ndarray, frame2: np.ndarra
     return hamming_distance
 
 def get_segmented_and_filtered_frames(video_files: List[str], keyframe_files: List[str],embedding_values: List[np.ndarray],thresholds: Dict[str, Optional[float]]) -> Tuple[List[Tuple[np.ndarray, np.ndarray]], List[float]]:
-    params = read_config()
     frame_embedding_pairs = []
     timestamps = []
     video_id = None
@@ -89,17 +90,17 @@ def get_segmented_and_filtered_frames(video_files: List[str], keyframe_files: Li
             filtered_timestamps = filter_keyframes_based_on_phash(frames, timestamps, thresholds)
             frame_embedding_pairs = [(frame, emb) for frame, emb, ts in zip(frames, embedding_values, timestamps) if ts in filtered_timestamps]
         if len(frame_embedding_pairs) == 0:
-            delete_associated_files(video_id, params)
+            delete_associated_files(video_id, directories)
             print(f"No keyframes remaining after filtering for video ID {video_id}. Associated files deleted.")
             return [], []
         if len(frame_embedding_pairs) != len(timestamps):
-            delete_associated_files(video_id, params)
+            delete_associated_files(video_id, directories)
             print("Mismatch in the number of frames and timestamps after filtering.")
         timestamps = [ts for ts in timestamps if ts in filtered_timestamps]
         return frame_embedding_pairs, timestamps
     except Exception as e:
         if video_id is not None:
-            delete_associated_files(video_id, params)
+            delete_associated_files(video_id, directories)
             print(f"An error occurred during processing: {e}. Associated files for video ID {video_id} have been deleted.")
         else:
             print(f"An error occurred: {e}, but no video ID was available to delete associated files.")
