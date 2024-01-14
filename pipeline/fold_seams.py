@@ -126,7 +126,7 @@ def main(segment_video, segment_audio, specific_videos):
         if segment_audio:
             keyframe_audio_clip_output = os.path.join(base_directory, directories['keyframe_audio_clip_output'], str(vid))
             os.makedirs(keyframe_audio_clip_output, exist_ok=True)
-            segment_audio_using_keyframes(audio_files[0], keyframe_audio_clip_output, keyframe_timestamps, thresholds, suffix_='_fromaudio_filtered')
+            segment_audio_using_keyframes(audio_files[0], keyframe_audio_clip_output, keyframe_timestamps, suffix_='_fromaudio_filtered')
 
 def setup_for_video_audio(vid):
     try:

@@ -4,6 +4,7 @@ import shutil
 from pipeline import read_config, is_directory_empty
 
 directories = read_config(section="directory")
+evaluations = read_config(section="evaluations")
 
 def move_and_group_files():
     # Define source directories for various categories of files

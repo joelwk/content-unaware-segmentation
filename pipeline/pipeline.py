@@ -129,7 +129,7 @@ def install_requirements(install_dir):
     if os.path.exists(req_file):
         subprocess.run(["pip", "install", "-r", req_file], check=True)
 
-def prepare_dataset_requirements(external_parquet_path):
+def prepare_dataset_requirements(directories, external_parquet_path):
     try:
         if external_parquet_path is not None:
             shutil.copy(external_parquet_path, f"{directories}/dataset_requirements.parquet")
@@ -152,7 +152,7 @@ def main():
     external_parquet = directories.get("external_parquet", None)
     try:
         args = parse_args()
-        config = {"local": generate_config(directories)}
+        config = {"local": generate_config()}
         selected_config = config[args.mode]
         create_directories(selected_config)
         clipvideoencode_repo_url = "https://github.com/iejMac/clip-video-encode.git"
