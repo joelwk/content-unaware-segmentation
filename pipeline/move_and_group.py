@@ -5,7 +5,7 @@ from pipeline import read_config, is_directory_empty
 
 directories = read_config(section="directory")
 
-def move_and_group_files(directories):
+def move_and_group_files():
     # Define source directories for various categories of files
     base_directory = directories['base_directory']
     src_dirs = {
@@ -52,20 +52,20 @@ def move_and_group_files(directories):
                 shutil.move(file_path, new_file_path)
                 print(f"Moved {file_path} to {new_file_path}")
 
-def cleanup_unwanted_dirs(directories, unwanted_dirs=None):
+def cleanup_unwanted_dirs(clean_directory, unwanted_dirs=None):
     if unwanted_dirs:
         for unwanted_dir in unwanted_dirs:
-            path_to_remove = os.path.join(directories, unwanted_dir)
+            path_to_remove = os.path.join(clean_directory, unwanted_dir)
             if os.path.exists(path_to_remove):
                 shutil.rmtree(path_to_remove)
                 print(f"Removed {path_to_remove}")
     else:
-        if os.path.exists(directories):
-            shutil.rmtree(directories)
-            print(f"Removed entire directory: {directories}")
+        if os.path.exists(clean_directory):
+            shutil.rmtree(clean_directory)
+            print(f"Removed entire directory: {clean_directory}")
 
 def main():
-    move_and_group_files(directories)
+    move_and_group_files()
     cleanup_unwanted_dirs(evaluations['completedatasets'], ['00000_stats', '00000'])
     cleanup_unwanted_dirs(directories['base_directory'])  
 if __name__ == "__main__":

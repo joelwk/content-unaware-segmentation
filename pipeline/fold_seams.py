@@ -115,7 +115,7 @@ def main(segment_video, segment_audio, specific_videos):
     thresholds = read_thresholds_config()
     video_ids = get_all_video_ids(os.path.join(base_directory, directories['original_frames'])) if specific_videos is None else specific_videos
     for vid in video_ids:
-        audio_files, video_files, key_video_files, embedding_files, keyframe_data = setup_for_video_audio(vid, directories)
+        audio_files, video_files, key_video_files, embedding_files, keyframe_data = setup_for_video_audio(vid)
         if any(v is None for v in [audio_files, video_files, key_video_files, embedding_files, keyframe_data]):
             continue
         keyframe_timestamps = [data['time_frame'] for data in keyframe_data.values()]

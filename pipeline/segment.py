@@ -14,9 +14,9 @@ directories = read_config(section="directory")
 configs = read_config(section="config_params")
 evaluations = read_config(section="evaluations")
 
-def remove_incomplete_video_directories(directories, completedirectory):
+def remove_incomplete_video_directories():
     required_dirs = [directories['keyframe_audio_clip_output'], directories['embeddings'], directories['keyframes'], directories['original_frames']]
-    base_dir = completedirectory['completedatasets']
+    base_dir = evaluations['completedatasets']
     for video_dir in os.listdir(base_dir):
         video_path = os.path.join(base_dir, video_dir)
         if not os.path.isdir(video_path):

@@ -32,7 +32,7 @@ def clip_encode():
                 metadata_columns=['videoLoc', 'videoID', 'duration'])
 
 def main():
-    clip_encode(directories)
+    clip_encode()
     return 0
 if __name__ == "__main__":
     main()

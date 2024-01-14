@@ -11,7 +11,7 @@ from contextlib import contextmanager
 import configparser
 import shutil
 
-def read_config(section="directories"):
+def read_config(section="directory"):
     base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     config_path=f'{base_path}/pipeline/config.ini'
     if not os.path.exists(config_path):
@@ -24,7 +24,7 @@ def read_config(section="directories"):
         raise KeyError(f"Section not found: {section}")
     return {key: config[section][key] for key in config[section]}
     
-directories = read_config(section="directories")
+directories = read_config(section="directory")
 
 def string_to_bool(string_value):
     return string_value.lower() in ['true', '1', 't', 'y', 'yes', 'on']
@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument('--mode', type=str, default='local', help='Execution mode: local or cloud')
     return parser.parse_args()
     
-def generate_config(directories):
+def generate_config():
     base_directory = directories['base_directory']
     return {
         "directory": base_directory,
@@ -54,17 +54,17 @@ def generate_config(directories):
         "keyframe_embedding_output": os.path.join(base_directory,directories['embeddings']),
         "config_yaml":  os.path.join(base_directory, "config.yaml")}
 
-def is_directory_empty(directories): 
-    return not os.listdir(directories)
+def is_directory_empty(is_empty): 
+    return not os.listdir(is_empty)
 
 def delete_associated_files(video_id, params):
     try:
         video_id_str = str(video_id)
         for directory_key in [params['original_frames'], params['keyframes'], params['embeddings'], params['keyframe_audio_clip_output']]:
-            directories = params.get(directory_key)
-            if directories and os.path.exists(directories):
+            dirs = params.get(directory_key)
+            if dirs and os.path.exists(dirs):
                 # Match files that exactly start with the video_id followed by non-numeric characters
-                pattern = f"{directories}/{video_id_str}[^0-9]*"
+                pattern = f"{dirs}/{video_id_str}[^0-9]*"
                 for file in glob.glob(pattern):
                     if os.path.isfile(file):
                         os.remove(file)
@@ -80,10 +80,10 @@ def create_directories(config):
         if not path.endswith(('.parquet', '.yaml')):
             os.makedirs(path, exist_ok=True)
 
-def get_local_package_dependencies(directories):
-    setup_file = os.path.join(directories, 'setup.py')
+def get_local_package_dependencies(install_dir):
+    setup_file = os.path.join(install_dir, 'setup.py')
     if not os.path.exists(setup_file):
-        print(f"Setup file not found in {directories}")
+        print(f"Setup file not found in {install_dir}")
         return []
     dependencies = []
     with open(setup_file, 'r') as file:
@@ -103,8 +103,8 @@ def clone_repository(git_url, target_dir):
             return 1
     return full_path
 
-def install_local_package(directories):
-    with change_directory(directories):
+def install_local_package(install_dir):
+    with change_directory(install_dir):
         result = subprocess.run(["pip", "install", "-e", "."], capture_output=True, text=True)
         if result.returncode != 0:
             print(f"Error installing local package: {result.stderr}")
@@ -124,12 +124,12 @@ def modify_requirements_txt(file_path, target_packages):
             if not modified:
                 f.write(line)
 
-def install_requirements(directories):
-    req_file = os.path.join(directories, 'requirements.txt')
+def install_requirements(install_dir):
+    req_file = os.path.join(install_dir, 'requirements.txt')
     if os.path.exists(req_file):
         subprocess.run(["pip", "install", "-r", req_file], check=True)
 
-def prepare_dataset_requirements(directories, external_parquet_path):
+def prepare_dataset_requirements(external_parquet_path):
     try:
         if external_parquet_path is not None:
             shutil.copy(external_parquet_path, f"{directories}/dataset_requirements.parquet")
