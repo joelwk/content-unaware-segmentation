@@ -68,11 +68,9 @@ def collect_video_metadata(video_files, output):
             
         # Fallback to get_video_duration if 'duration' is not available in JSON metadata
         duration = metadata.get('video_metadata', {}).get('streams', [{}])[0].get('duration', None)
-        print(duration)
         if duration is None:
             print(f"Duration not found in metadata. Calculating duration for {video_id}.")
             duration = get_video_duration(video_file)
-        print(keyframe_video_locs)
             
         keyframe_video_locs.append({
             "videoLoc": f"{output}/{video_id}_key_frames.mp4",
@@ -158,7 +156,7 @@ def run_video2dataset_with_yt_dlp(directories):
 def main():
     directories = read_config(section="directory")
     if directories['video_load'] == 'directory':
-        run_subset_video2dataset(directories)
+        #run_subset_video2dataset(directories)
         prepare_clip_encode(directories)
     else:
         print("Downloading videos from yt")

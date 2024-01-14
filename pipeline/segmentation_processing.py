@@ -72,7 +72,6 @@ def get_segmented_and_filtered_frames(video_files: List[str], keyframe_files: Li
     timestamps = []
     video_id = None
     try:
-        total_duration = ld.get_video_duration(video_files)
         for vid_path in keyframe_files:
             video_id = int(os.path.basename(vid_path).split('.')[0])
             vid_cap = cv2.VideoCapture(vid_path)

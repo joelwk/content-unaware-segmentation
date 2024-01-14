@@ -19,14 +19,11 @@ from segmentation_processing import get_segmented_and_filtered_frames, calculate
 import load_data as ld 
 
 class SegmentSuccessorAnalyzer:
-    def __init__(self, total_duration: float, embedding_values: np.ndarray, max_segment_duration: Optional[int] = None) -> None:
+    def __init__(self, embedding_values: np.ndarray, max_segment_duration: Optional[int] = None) -> None:
         self.thresholds = read_thresholds_config(section="thresholds")
-        if not isinstance(total_duration, float):
-            raise TypeError("total_duration must be a float.")
         if not isinstance(embedding_values, np.ndarray):
             raise TypeError("embedding_values must be a numpy array.")
         self.embedding_values = embedding_values
-        self.total_duration = total_duration
         self.max_segment_duration = int(self.thresholds['max_duration']) if max_segment_duration is None else max_segment_duration
         
     def run(self, video_files: List[str], thresholds: Dict[str, Optional[float]], keyframe_files: List[str], save_dir: str) -> Tuple[List[np.ndarray], List[float]]:
@@ -188,9 +185,8 @@ def run_analysis(analyzer_class, specific_videos=None):
             if not video_files:
                 raise ValueError(f"No video files found for video {video}.")
             key_video_files = ld.load_key_video_files(video, params)
-            total_duration = ld.get_video_duration(video_files)
             os.makedirs(save_dir, exist_ok=True)
-            analyzer = analyzer_class(total_duration, embedding_values, thresholds['max_duration'])
+            analyzer = analyzer_class(embedding_values, thresholds['max_duration'])
             analyzer.run(video_files, thresholds, key_video_files, save_dir)
             if is_directory_empty(save_dir):
                 raise ValueError(f"No keyframes found after processing video {video}.")
