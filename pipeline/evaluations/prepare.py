@@ -11,7 +11,7 @@ import traceback
 import re
 import io
 from pydub import AudioSegment
-from evaluations.pipeline_eval import modify_hook_file
+from contentunaware.pipeline.evaluations.pipeline_eval import modify_hook_file
 
 import pandas as pd
 import numpy as np
@@ -35,10 +35,9 @@ except ImportError as e:
         from PIL import Image
     else:
         print("Could not find the path to hook.py in the ImportError traceback.")
-        
+
+base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 config_path = f'{base_path}/config.ini'
-evaluations = read_config('evaluations')
-model_config = read_config('evaluations', config_path)
 
 def read_config(section, config_path=config_path):
     if not os.path.exists(config_path):
@@ -48,7 +47,10 @@ def read_config(section, config_path=config_path):
     if section not in config.sections():
         raise KeyError(f"Section {section} not found in configuration file.")
     return {key: config[section][key] for key in config[section]}
-    
+
+evaluations = read_config('evaluations')
+model_config = read_config('evaluations', config_path)
+
 def load_key_image_files(vid, params):
     pattern = os.path.join(params['completedatasets'], str(vid), "keyframes", "*.png")
     return iter(sorted(glob.glob(pattern)))
