@@ -8,13 +8,14 @@ import argparse
 import shutil
 import sys
 import ffmpeg
-from pipeline import read_config, generate_config, install_local_package, parse_args
+from pipeline import read_config, generate_config, install_local_package, parse_args, save_metadata_to_parquet
 from load_data import get_video_duration
 import cv2
 import os
 import pandas as pd
 
 directories = read_config(section="directory")
+config_params = read_config(section="config_params")
 
 def create_parquet_from_videos(video_dir, parquet_file):
     data = []
@@ -27,29 +28,6 @@ def create_parquet_from_videos(video_dir, parquet_file):
     df = pd.DataFrame(data)
     df.to_parquet(parquet_file)
     print(f"Parquet file saved to {parquet_file}")
-
-def run_subset_video2dataset():
-    base_directory = directories['base_directory']
-    video_files = glob.glob(os.path.join(base_directory, directories["original_frames"], '**/*.mp4'), recursive=True)
-    base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    os.makedirs(os.path.join(base_directory, directories["original_frames"]), exist_ok=True)
-    url_list = os.path.join(base_directory, 'dataset_requirements.parquet')
-    create_parquet_from_videos(video_directory, url_list)
-    print(f"Reading URLs from: {url_list}")
-    df = pd.read_parquet(url_list)
-    for idx, row in df.iterrows():
-        print(f"Processing video {idx+1}: {row['url']}")
-        command = [
-            'video2dataset',
-            '--input_format', 'parquet',
-            '--url_list', url_list,
-            '--encode_formats', '{"video": "mp4", "audio": "m4a"}',
-            '--stage', 'subset',
-            '--output_folder', os.path.join(base_directory, directories["original_frames"]),
-            '--config', os.path.join(base_path, 'pipeline', 'config.yaml')]
-        result = subprocess.run(command, capture_output=True, text=True)
-        print("Return code:", result.returncode)
-        print("STDOUT:", result.stdout)
 
 def load_dataset_requirements(base_directory):
     return pd.read_parquet(f"{base_directory}/dataset_requirements.parquet").to_dict(orient='records')
@@ -119,14 +97,6 @@ def segment_key_frames_in_directory():
         else:
             print(f"Failed to segment key frames for {video_id}. Error: {stderr.decode('utf8')}")
 
-def save_metadata_to_parquet(keyframe_video_locs, original_video_locs, base_directory):
-    keyframe_video_df = pd.DataFrame(keyframe_video_locs)
-    original_video_df = pd.DataFrame(original_video_locs)
-    keyframe_video_df['duration'] = keyframe_video_df['duration'].astype(float)
-    original_video_df['duration'] = original_video_df['duration'].astype(float)
-    keyframe_video_df.to_parquet(f'{base_directory}/keyframe_video_requirements.parquet', index=False)
-    original_video_df.to_parquet(f'{base_directory}/original_video_requirements.parquet', index=False)
-
 def prepare_clip_encode():
     base_directory = directories['base_directory']
     dataset_requirements = load_dataset_requirements(base_directory)
@@ -156,11 +126,14 @@ def run_video2dataset_with_yt_dlp():
         print("STDOUT:", result.stdout)
         
 def main():
-    if directories['video_load'] == 'directory':
-        #run_subset_video2dataset()
+    if directories['video_load'] == 'directory' and config_params['mode'] == 'directory':
+        print("Loading from directory through directory")
         prepare_clip_encode()
+    elif directories['video_load'] == 'directory' and config_params['mode'] == 'wds':
+        print("Loading from directory through wds")
+        pass
     else:
-        print("Downloading videos from yt")
+        print("Downloading videos from yt and segmenting from downloaded directory")
         run_video2dataset_with_yt_dlp()
         fix_codecs_in_directory()
         segment_key_frames_in_directory()

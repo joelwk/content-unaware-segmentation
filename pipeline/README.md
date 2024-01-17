@@ -60,7 +60,7 @@ take_every_nth: int: only take every nth frame
 video_load: str: directory, if the videos are already downloaded using yt-dl, download, if not, then the videos will be downloaded
 
 [config_params]
-mode: str: used for evaluation, if wds, then the a WebDataset will be used to evaluate videos, if directory, then the completedatasets directory(./completedatasets) will be used
+mode: str: used for evaluation, if wds, then the a WebDataset will be used to load the videos, if directory, then the directory will be used to load the videos
 full_whisper_audio: bool: if True, then the full audio will be transcribed, if False, then only the audio segmennts will be transcribed
 transcript_mode: str: if all, both whisper transcripts and youtube subtitles are created, if whisper, then only whisper transcripts are created, if yt, then only youtube subtitles are created
 segment_video: bool: if True, then the video will be segmented, if False, then the video will not be segmented

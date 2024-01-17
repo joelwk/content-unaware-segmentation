@@ -99,6 +99,7 @@ class SegmentSuccessorAnalyzer:
             return
         keyframe_data = {}
         segment_counter = 0
+        new_segment_indices = []
         if plot_grid:
             num_frames = len(frame_embedding_pairs)
             num_cols = 4
@@ -128,7 +129,8 @@ class SegmentSuccessorAnalyzer:
                 ax.axis('off')
             plt.tight_layout()
             plt_path = os.path.join(save_dir, 'keyframes_grid.png')
-            plt.savefig(plt_path)
+            plt.savefig(plt_path
+            )
         segment_counter = 0
         for i, (frame, _) in enumerate(frame_embedding_pairs):
             if is_clear_image(frame):
@@ -137,13 +139,17 @@ class SegmentSuccessorAnalyzer:
                 individual_keyframe_filename = f'keyframe_{i}_timestamp_{timestamps[i]:.2f}.png'
                 individual_keyframe_path = os.path.join(save_dir, individual_keyframe_filename)
                 cv2.imwrite(individual_keyframe_path, frame)
+                new_segment_indices.append(_)
                 keyframe_data[i] = {
                     'index': i,
                     'time_frame': timestamps[i],
-                    'filename': individual_keyframe_filename}
+                    'filename': individual_keyframe_filename,
+                    'embedding_idx': segment_counter
+                }
         json_path = os.path.join(save_dir, 'keyframe_data.json')
         with open(json_path, 'w') as f:
             json.dump(keyframe_data, f)
+        np.save(os.path.join(save_dir,'keyframe_embedding_indices.npy'), np.array(new_segment_indices))
 
 def remove_whitespace(frame):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)

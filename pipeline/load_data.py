@@ -6,6 +6,10 @@ import cv2
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import normalize
+import io
+from PIL import Image
+import json
+from pydub import AudioSegment
 
 def load_video_files(vid, params):
     return sorted(glob.glob(os.path.join(params['base_directory'], params['original_frames'], f"{vid}.mp4")))
@@ -21,7 +25,31 @@ def load_embedding_files(vid, params):
 
 def load_keyframe_embedding_files(vid, params):
     return sorted(glob.glob(os.path.join(params['base_directory'], params['embeddings'], f"{vid}.npy")))
-    
+
+def process_files(sample):
+    result = {}
+    for key, value in sample.items():
+        if key.endswith("json"):
+            result[key] = json.loads(value)
+        elif key.endswith("npy"):
+            result[key] = np.load(io.BytesIO(value))
+        elif key.endswith(".png"):
+            result[key] = Image.open(io.BytesIO(value)).convert("RGB")
+        elif key.endswith("m4a") or key.endswith("flac") or key.endswith("mp3"):
+            audio_format = "m4a" if key.endswith("m4a") else ("flac" if key.endswith("flac") else "mp3")
+            audio_file = io.BytesIO(value)
+            try:
+                result[key] = AudioSegment.from_file(audio_file, format=audio_format)
+            except Exception as e:
+                print(f"Error processing {key}: {e}")
+        elif key.endswith("txt"):
+            try:
+                text_content = value.decode('utf-8')
+                result[key] = text_content
+            except Exception as e:
+                print(f"Error decoding {key}: {e}")
+    return result
+
 def load_embedding_values(embedding_files):
     if not embedding_files:
         raise ValueError("No embedding files provided.")

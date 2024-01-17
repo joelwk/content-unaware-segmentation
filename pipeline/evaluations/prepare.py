@@ -11,7 +11,7 @@ import traceback
 import re
 import io
 from pydub import AudioSegment
-from contentunaware.pipeline.evaluations.pipeline_eval import modify_hook_file
+from evaluations.pipeline_eval import modify_hook_file
 
 import pandas as pd
 import numpy as np

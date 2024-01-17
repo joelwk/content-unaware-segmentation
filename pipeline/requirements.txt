@@ -29,3 +29,4 @@ scipy
 imagehash
 opencv-python
 video2numpy
+pydub

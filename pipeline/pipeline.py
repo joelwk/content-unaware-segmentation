@@ -147,6 +147,14 @@ def prepare_dataset_requirements(directories, external_parquet_path):
     except Exception as e:
         print(f"Error while saving Parquet file: {e}")
 
+def save_metadata_to_parquet(keyframe_video_locs, original_video_locs, base_directory):
+    keyframe_video_df = pd.DataFrame(keyframe_video_locs)
+    original_video_df = pd.DataFrame(original_video_locs)
+    keyframe_video_df['duration'] = keyframe_video_df['duration'].astype(float)
+    original_video_df['duration'] = original_video_df['duration'].astype(float)
+    keyframe_video_df.to_parquet(f'{base_directory}/keyframe_video_requirements.parquet', index=False)
+    original_video_df.to_parquet(f'{base_directory}/original_video_requirements.parquet', index=False)
+
 def main():
     base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     external_parquet = directories.get("external_parquet", None)
