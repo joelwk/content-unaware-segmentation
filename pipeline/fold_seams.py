@@ -15,7 +15,7 @@ from segmentation_processing import get_segmented_and_filtered_frames, filter_ke
 directories = read_config(section="directory")
 thresholds = read_config(section="thresholds")
 
-def segment_video_using_keyframes_and_embeddings(video_path, keyframe_clip_output_dir, keyframe_timestamps, suffix_=None):
+def segment_video_using_keyframes_and_embeddings(video_path, keyframe_clip_output_dir, keyframe_timestamps, thresholds, suffix_=None):
     print(keyframe_timestamps)
     if not isinstance(video_path, str):
         raise TypeError("video_path must be a string.")
@@ -137,7 +137,6 @@ def setup_for_video_audio(vid):
         embedding_values = load_embedding_values(embedding_files)
         audio_files = load_audio_files(str(vid), directories)
         json_path = os.path.join(".", base_directory, directories['keyframes'], str(vid), "keyframe_data.json")
-        print(json_path)
         if not os.path.exists(json_path):
             raise FileNotFoundError(f"No keyframe_data.json found for video id {vid}.")
         with open(json_path, 'r') as f:
