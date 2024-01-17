@@ -46,7 +46,7 @@ class SegmentSuccessorAnalyzer:
         successor_distance = calculate_successor_distance(self.embedding_values)
         initial_new_segments = check_for_new_segment(distances, successor_distance, thresholds)
         new_segments = self.calculate_new_segments(initial_new_segments, timestamps)
-        self.save_keyframes(frame_embedding_pairs, new_segments, distances, successor_distance, timestamps, save_dir, plot_grid=string_to_bool(config_params.get("plot_grid", "False")))
+        self.save_keyframes(frame_embedding_pairs, new_segments, distances, successor_distance, timestamps, save_dir, plot_grid=string_to_bool(config_params.get("plot_grid", "False")), save_keyframes=string_to_bool(config_params.get("save_keyframes", "True")))
 
     def calculate_new_segments(self, initial_new_segments, timestamps):
         try:
@@ -93,7 +93,7 @@ class SegmentSuccessorAnalyzer:
                 return j
         return intervening_frames[0]
 
-    def save_keyframes(self, frame_embedding_pairs, new_segments, distances, successor_distance, timestamps, save_dir, plot_grid=True):
+    def save_keyframes(self, frame_embedding_pairs, new_segments, distances, successor_distance, timestamps, save_dir, plot_grid=True, save_keyframes=True):
         if len(frame_embedding_pairs) != len(timestamps):
             print("Mismatch in the number of frames and timestamps. Exiting save_keyframes.")
             return
@@ -138,7 +138,8 @@ class SegmentSuccessorAnalyzer:
                     segment_counter += 1
                 individual_keyframe_filename = f'keyframe_{i}_timestamp_{timestamps[i]:.2f}.png'
                 individual_keyframe_path = os.path.join(save_dir, individual_keyframe_filename)
-                cv2.imwrite(individual_keyframe_path, frame)
+                if save_keyframes:
+                    cv2.imwrite(individual_keyframe_path, frame)
                 new_segment_indices.append(_)
                 keyframe_data[i] = {
                     'index': i,
