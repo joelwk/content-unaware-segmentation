@@ -30,6 +30,7 @@ from evaluations.prepare import (
 thresholds = read_config(section="thresholds")
 evaluations = read_config(section="evaluations")
 config_params = read_config(section="config_params")
+labels = read_config(section="labels")
 
 def is_good_image(is_person, face_probs, orientation_probs, engagement_probs):
     # Define thresholds
@@ -53,7 +54,6 @@ def zeroshot_classifier(image_path, video_identifier, output_dir, key=None):
         image_path = Image.open(image_path)
         output_dir = os.path.join(output_dir, str(video_identifier))
 
-    labels = read_config("labels")
     model, preprocess_train, preprocess_val, tokenizer = model_clip()
     get_embeddings(model, tokenizer)
 

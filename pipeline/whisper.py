@@ -193,7 +193,6 @@ def process_entire_audio(audio_path, full_audio_clip_output_dir, evaluations):
         os.makedirs(full_audio_clip_output_dir)
     full_audio_transcription_pipeline(audio_path, full_audio_clip_output_dir)
 
-
 def main():
     process_audio_files()
 

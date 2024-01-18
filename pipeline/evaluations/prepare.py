@@ -48,8 +48,10 @@ def read_config(section, config_path=config_path):
         raise KeyError(f"Section {section} not found in configuration file.")
     return {key: config[section][key] for key in config[section]}
 
-evaluations = read_config('evaluations')
+evaluations = read_config('evaluations', config_path)
 model_config = read_config('evaluations', config_path)
+model_config = read_config('evaluations', config_path)
+labels = read_config('labels', config_path)
 
 def load_key_image_files(vid, params):
     pattern = os.path.join(params['completedatasets'], str(vid), "keyframes", "*.png")
@@ -201,6 +203,7 @@ def get_audio_embeddings(audio_path, model_clap):
     return audio_files, np.vstack(embeddings)
 
 def get_embeddings(model_clip, tokenizer, config_path=config_path):
+    
     emotions = format_labels(labels, 'emotions')
     check_if_person_list = format_labels(labels, 'checkifperson')
     number_of_faces_list = format_labels(labels, 'numberoffaces')
