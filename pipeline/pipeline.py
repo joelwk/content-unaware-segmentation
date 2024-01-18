@@ -25,6 +25,7 @@ def read_config(section="directory"):
     return {key: config[section][key] for key in config[section]}
     
 directories = read_config(section="directory")
+evaluations = read_config(section="evaluations")
 
 def string_to_bool(string_value):
     return string_value.lower() in ['true', '1', 't', 'y', 'yes', 'on']
@@ -93,6 +94,21 @@ def get_local_package_dependencies(install_dir):
                 dependencies.extend(deps)
     return dependencies
 
+def update_model():
+    base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    clipencode_abs_path = os.path.join(base_path,'pipeline', 'clip-video-encode','clip_video_encode','clip_video_encode.py')
+    new_model_name = evaluations['model_name']
+    new_pretrained_model = evaluations['model_clip']
+    with open(clipencode_abs_path, 'r') as file:
+        lines = file.readlines()
+    with open(clipencode_abs_path, 'w') as file:
+        for line in lines:
+            if 'model_name=' in line:
+                line = f'    model_name="{new_model_name}",\n'
+            elif 'pretrained=' in line:
+                line = f'    pretrained="{new_pretrained_model}",\n'
+            file.write(line)
+
 def clone_repository(git_url, target_dir):
     repo_name = git_url.split("/")[-1].replace(".git", "")
     full_path = os.path.join(target_dir, repo_name)
@@ -100,7 +116,7 @@ def clone_repository(git_url, target_dir):
         result = subprocess.run(["git", "clone", git_url, full_path], capture_output=True, text=True)
         if result.returncode != 0:
             print(f"Error cloning repository: {result.stderr}")
-            return 1
+            return None
     return full_path
 
 def install_local_package(install_dir):

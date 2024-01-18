@@ -1,4 +1,4 @@
-from pipeline import read_config, install_local_package, save_metadata_to_parquet
+from pipeline import read_config, install_local_package, save_metadata_to_parquet, update_model
 import load_data as ld
 import glob
 import subprocess
@@ -62,6 +62,7 @@ def extract_video_id(key):
     return None
 
 def clip_encode():
+    update_model()
     base_directory = directories['base_directory']
     if directories['video_load'] == 'download' and config_params['mode'] == 'directory':
         embeddings = os.path.join(base_directory, directories['embeddings'])

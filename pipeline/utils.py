@@ -69,6 +69,7 @@ def move_and_remove_subdirectory(audio_clip_output_dir):
                 shutil.rmtree(subdir_path)
             except Exception as e:
                 print(f"Error removing {subdir_path}: {e}")
+                
 def convert_types():
     base_directory = evaluations['completedatasets']
     for n in os.listdir(base_directory):
