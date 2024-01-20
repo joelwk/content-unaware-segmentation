@@ -12,7 +12,7 @@ import re
 import io
 from pydub import AudioSegment
 from evaluations.pipeline_eval import modify_hook_file
-
+from sklearn.preprocessing import normalize
 import pandas as pd
 import numpy as np
 try:
@@ -52,6 +52,15 @@ evaluations = read_config('evaluations', config_path)
 model_config = read_config('evaluations', config_path)
 model_config = read_config('evaluations', config_path)
 labels = read_config('labels', config_path)
+
+def load_embedding_values(embedding_files):
+    keyframe_files = glob.glob(f"{embedding_files}/*.npy")
+    if not keyframe_files:
+        raise ValueError("No embedding files provided.")
+    loaded_arrays = [np.load(file) for file in keyframe_files]
+    if not any(len(arr) > 0 for arr in loaded_arrays):
+        raise ValueError("Failed to load any arrays from embedding files.")
+    return normalize(np.concatenate(loaded_arrays, axis=0), axis=1)
 
 def load_key_image_files(vid, params):
     pattern = os.path.join(params['completedatasets'], str(vid), "keyframes", "*.png")
@@ -252,4 +261,4 @@ def move_paired(audio_segment, text_content, whisper_segment_dir, segment_key):
         text_destination_path = os.path.join(whisper_segment_dir, f"{segment_key}.txt")
         with open(text_destination_path, "w", encoding="utf-8") as text_file:
             text_file.write(text_content)
-        print(f"Saved associated text file to {text_destination_path}")
+        print(f"Saved associated text file to {text_destination_path}")  

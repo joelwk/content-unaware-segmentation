@@ -19,18 +19,13 @@ clipencode_abs_path = os.path.join(base_path,'pipeline', 'clip-video-encode')
 def collect_video_metadata(video_ids, json_metadata, output):
     keyframe_video_locs = []
     original_video_locs = []
-
-
     for video_id, metadata in zip(video_ids, json_metadata):
         print(f"Loaded metadata for {video_id}: {metadata}")
-
-        # Fallback to get_video_duration if 'duration' is not available in JSON metadata
         duration = metadata.get('video_metadata', {}).get('streams', [{}])[0].get('duration', None)
         if duration is None:
             print(f"Duration not found in metadata. Calculating duration for {video_id}.")
-            video_file_path = os.path.join(output, f"{video_id}.mp4")  # Assuming video file path
+            video_file_path = os.path.join(output, f"{video_id}.mp4")
             duration = ld.get_video_duration(video_file_path)
-
         keyframe_video_locs.append({
             "videoLoc": f"{output}/{video_id}_key_frames.mp4",
             "videoID": video_id,

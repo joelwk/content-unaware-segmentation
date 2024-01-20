@@ -17,18 +17,6 @@ import pandas as pd
 directories = read_config(section="directory")
 config_params = read_config(section="config_params")
 
-def create_parquet_from_videos(video_dir, parquet_file):
-    data = []
-    for index, file_name in enumerate(os.listdir(video_dir)):
-        if file_name.endswith(('.mp4', '.avi', '.mov', '.mkv')):
-            video_path = os.path.join(video_dir, file_name)
-            df["url"] = df.apply(lambda row: f"https://youtube.com/watch?v={file_name}", axis=1)
-            df["duration"] = get_video_duration(video_path)
-            data.append({'url': video_path, 'caption': file_name, 'duration': duration})
-    df = pd.DataFrame(data)
-    df.to_parquet(parquet_file)
-    print(f"Parquet file saved to {parquet_file}")
-
 def load_dataset_requirements(base_directory):
     return pd.read_parquet(f"{base_directory}/dataset_requirements.parquet").to_dict(orient='records')
 

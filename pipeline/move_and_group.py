@@ -27,7 +27,7 @@ def move_and_group_files():
             if basename.endswith("_stats"):
                 continue
             integer_suffix = basename.split('.')[0]
-            if category in ['keyframes','keyframe_audio_clips']:
+            if category in ['keyframes']:
                 for nested_file in glob.glob(f"{file_path}/*"):
                     if os.path.getsize(nested_file) == 0 or is_directory_empty(file_path):
                         invalid_suffixes.add(integer_suffix)

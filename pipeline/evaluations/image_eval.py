@@ -24,9 +24,10 @@ import warnings
 from evaluations.prepare import (
     read_config, generate_embeddings, format_labels,remove_duplicate_extension, process_keyframe_audio_pairs, 
     get_embeddings, model_clip, normalize_scores, softmax, sort_and_store_scores, load_key_image_files, 
-    load_key_audio_files, get_all_video_ids,process_files, move_paired
+    load_key_audio_files, get_all_video_ids,process_files, move_paired,load_embedding_values
 )
 
+directories = read_config(section="directory")
 thresholds = read_config(section="thresholds")
 evaluations = read_config(section="evaluations")
 config_params = read_config(section="config_params")
@@ -48,11 +49,7 @@ def is_good_image(is_person, face_probs, orientation_probs, engagement_probs):
     # Return True if the image meets the criteria for being "Good"
     return is_person_detected and single_face_detected and facing_forward and engaged
 
-def zeroshot_classifier(image_path, video_identifier, output_dir, key=None):
-    if key is None:
-        key = image_path
-        image_path = Image.open(image_path)
-        output_dir = os.path.join(output_dir, str(video_identifier))
+def zeroshot_classifier(input_data, video_identifier, output_dir, key=None):
 
     model, preprocess_train, preprocess_val, tokenizer = model_clip()
     get_embeddings(model, tokenizer)
@@ -78,16 +75,25 @@ def zeroshot_classifier(image_path, video_identifier, output_dir, key=None):
     # Set up the output directory for processed images
     run_output_dir = os.path.join(output_dir)
     os.makedirs(run_output_dir, exist_ok=True)
-    
-    # Load and preprocess the image
-    image_preprocessed = preprocess_val(image_path).unsqueeze(0)
 
-    # Encode the image using the CLIP model and normalize the features
-    image_preprocessed = image_preprocessed.to('cuda' if torch.cuda.is_available() else 'cpu')
-    image_features = model.encode_image(image_preprocessed)
-    image_features = image_features.detach().cpu().numpy()
-    image_features /= np.linalg.norm(image_features, axis=-1, keepdims=True)
-    
+    # Check if input_data is a NumPy array (embedding)
+    if isinstance(input_data, np.ndarray):
+        image_features = input_data
+        if key is None:
+          key = input_data
+          image_features = image_features.reshape(1, -1)
+    else:
+        if key is None:
+            key = input_data
+        image_path = Image.open(input_data)
+        image_preprocessed = preprocess_val(image_path).unsqueeze(0)
+        image_preprocessed = image_preprocessed.to('cuda' if torch.cuda.is_available() else 'cpu')
+        image_features = model.encode_image(image_preprocessed)
+        image_features = image_features.detach().cpu().numpy()
+        image_features /= np.linalg.norm(image_features, axis=-1, keepdims=True)
+    print('image_features shape', image_features.shape)
+    print('text_features_if_person shape', text_features_if_person.shape)
+
     # Calculate probabilities for different categories using softma
     is_person_probs = softmax(float(evaluations['scalingfactor']) * normalize_scores(image_features @ text_features_if_person.T))
     type_person_probs = softmax(float(evaluations['scalingfactor']) * image_features @ text_features_type_person.T)
@@ -101,6 +107,7 @@ def zeroshot_classifier(image_path, video_identifier, output_dir, key=None):
     face_detected = True
     if not perform_face_check:
         face_detected = is_good_image(is_person_probs[0], face_probs[0], orientation_probs[0], engagement_probs[0])
+    
     filename = os.path.basename(key)
     filename_without_ext = filename.split('.')[0]
     filename = remove_duplicate_extension(filename)
@@ -133,7 +140,14 @@ def process_from_directory():
     for video in video_ids:
         try:
             face_detected_in_video = evaluations.get('face_detected_in_video_or', 'False').lower() == 'true'
-            keyframes = load_key_image_files(video, evaluations)
+            keyframe_embeddings_path = os.path.join(evaluations['completedatasets'], str(video), directories['keyframes'])
+            print(keyframe_embeddings_path)
+            if os.path.exists(keyframe_embeddings_path) and os.listdir(keyframe_embeddings_path):
+                keyframes = load_embedding_values(keyframe_embeddings_path)
+
+                print(keyframes)
+            else:
+                keyframes = load_key_image_files(video, evaluations)
             for keyframe in keyframes:
                 if zeroshot_classifier(keyframe, video, os.path.join(evaluations['output'], "image_evaluations"), key=None):
                     face_detected_in_video = True

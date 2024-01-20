@@ -98,7 +98,7 @@ def update_model():
     base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     clipencode_abs_path = os.path.join(base_path,'pipeline', 'clip-video-encode','clip_video_encode','clip_video_encode.py')
     new_model_name = evaluations['model_name']
-    new_pretrained_model = evaluations['model_clip']
+    new_pretrained_model = evaluations['model_cve']
     with open(clipencode_abs_path, 'r') as file:
         lines = file.readlines()
     with open(clipencode_abs_path, 'w') as file:
