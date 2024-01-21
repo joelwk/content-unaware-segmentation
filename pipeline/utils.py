@@ -102,10 +102,9 @@ def rename_and_move_files(src_directory, dest_directory, regex_pattern=None):
 
 def rename_and_move():
     base_directory = directories['base_directory']
-    # Rename and move all files from the originalvideos/00000 directory to originalvideos/
     original_frames = os.path.join(base_directory, directories['original_frames'])
     keyframes = os.path.join(base_directory,directories['keyframes'])
-    embeddings = os.path.join(base_directory, directories['embeddings']) 
+    embeddings = os.path.join(base_directory, directories['embeddings'])
     rename_and_move_files(os.path.join(original_frames, '00000'), original_frames)
     rename_and_move_files(keyframes, keyframes, regex_pattern=r'(\d+)_key_frames')
     rename_and_move_files(embeddings, embeddings)

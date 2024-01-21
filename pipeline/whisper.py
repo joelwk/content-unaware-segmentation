@@ -5,6 +5,7 @@ import subprocess
 import glob
 import warnings
 from pipeline import read_config, string_to_bool
+from evaluations.prepare import model_clap
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -60,6 +61,17 @@ def segment_audio_using_keyframes(audio_path, audio_clip_output_dir, keyframe_da
             '-y', output_segment_path
         ]
         subprocess.run(command, check=True)
+    model = model_clap()
+    audio_files = sorted(glob.glob(os.path.join(audio_path, 'keyframe_*.flac')))
+    print('Found audio files:', audio_files)
+    for audio_file in audio_files:
+        if audio_file.endswith('.flac'):
+            print(image_file)
+            text_features = model.get_text_embedding(emotions_list, use_tensor=False)
+            text_features = normalize_vectors(text_features)
+            audio_embed = np.squeeze(model.get_audio_embedding_from_filelist([audio_file], use_tensor=False))
+            np.save(os.path.join(output_dir, base_name.replace('.mp3', '') + '_analysis.npy'), audio_embed)
+
     json_path = os.path.join(audio_clip_output_dir, 'keyframe_timestamps.json')
     with open(json_path, 'w') as f:
         json.dump(output_aligned, f)
@@ -115,6 +127,7 @@ def full_audio_transcription_pipeline(audio_path, output_dir):
         print(f"Full transcript created: {full_transcript_path}")
     except Exception as e:
         print(f"Error in full_audio_transcription_pipeline: {e}")
+model = model_clap()
 
 def time_to_seconds(timestr):
     h, m, s = timestr.split(':')
@@ -135,7 +148,7 @@ def write_transcripts_for_keyframes(transcripts, keyframe_timestamps, yt_output_
                 associated_transcripts.append(' '.join(transcript['lines']))
         with open(f'{yt_output_dir}/keyframe_{segment_idx}_yt_transcripts.txt', 'w') as f:
             for line in associated_transcripts:
-                f.write(f"{line}\n")
+                f.write(f"{line} ")
         print(f"Transcripts for keyframe {segment_idx} written to {yt_output_dir}/keyframe_{segment_idx}_yt_transcripts.txt")
 
 def process_audio_files():

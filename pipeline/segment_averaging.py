@@ -35,7 +35,7 @@ def clip_encode(parquet_path, emb_folder):
     else:
         print(f"Parquet file {parquet_path} does not exist. Skipping clip_video_encode.")
 
-def process_videos_and_metadata(dataset_folder):
+def process_videos_and_metadata(dataset_folder,emb_folder):
     for sub_folder in glob.glob(os.path.join(dataset_folder, '*')):
         video_files = glob.glob(os.path.join(sub_folder, '*.mp4'))
         clips = []

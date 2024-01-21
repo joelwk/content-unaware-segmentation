@@ -55,7 +55,7 @@ def generate_config():
         "keyframe_embedding_output": os.path.join(base_directory,directories['embeddings']),
         "config_yaml":  os.path.join(base_directory, "config.yaml")}
 
-def is_directory_empty(is_empty): 
+def is_directory_empty(is_empty):
     return not os.listdir(is_empty)
 
 def delete_associated_files(video_id, params):
@@ -64,7 +64,6 @@ def delete_associated_files(video_id, params):
         for directory_key in [params['original_frames'], params['keyframes'], params['embeddings'], params['keyframe_audio_clip_output']]:
             dirs = params.get(directory_key)
             if dirs and os.path.exists(dirs):
-                # Match files that exactly start with the video_id followed by non-numeric characters
                 pattern = f"{dirs}/{video_id_str}[^0-9]*"
                 for file in glob.glob(pattern):
                     if os.path.isfile(file):

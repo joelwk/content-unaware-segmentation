@@ -29,7 +29,6 @@ def remove_incomplete_video_directories():
 def run_all_scripts():
     segment_video = string_to_bool(configs.get("segment_video", "False"))
     segment_audio = string_to_bool(configs.get("segment_audio", "True"))
-    compute_embeddings = string_to_bool(configs.get("compute_embeddings", "False"))
     specific_videos_str = configs.get("specific_videos", "")
     specific_videos = [int(x.strip()) for x in specific_videos_str.strip('[]').split(',')] if specific_videos_str and specific_videos_str != "None" else None
     try:
@@ -38,9 +37,7 @@ def run_all_scripts():
         run_analysis(SegmentSuccessorAnalyzer)
         print('Running successor segmentation')
         fold_seams_main(segment_video, segment_audio, specific_videos)
-        if compute_embeddings:
-            print('Running segment averaging')
-            segment_averaging_main()
+        segment_averaging_main()
         print('Running move_and_group')
         move_and_group_main()
         remove_incomplete_video_directories()
