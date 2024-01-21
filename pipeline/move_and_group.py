@@ -68,8 +68,6 @@ def cleanup_unwanted_dirs(clean_directory, unwanted_dirs=None):
 def main():
     move_and_group_files()
     cleanup_unwanted_dirs(evaluations['completedatasets'], ['00000_stats', '00000'])
-    cleanup_unwanted_dirs(directories['base_directory'])  
-    cleanup_unwanted_dirs(os.path.join(directories['base_directory'], directories['original_frames']))
     
 if __name__ == "__main__":
     main()

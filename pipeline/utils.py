@@ -109,6 +109,57 @@ def rename_and_move():
     rename_and_move_files(keyframes, keyframes, regex_pattern=r'(\d+)_key_frames')
     rename_and_move_files(embeddings, embeddings)
 
+def move_or_copy(src_path, dest_dir, file_extension, video_id, copy=False):
+    for file in glob.glob(f"{src_path}/**/*{file_extension}", recursive=True):
+        dest_file_name = f"{video_id}_{os.path.basename(file)}"
+        dest_path = os.path.join(dest_dir, dest_file_name)
+        if copy:
+            shutil.copy(file, dest_path)
+        else:
+            shutil.move(file, dest_path)
+        print(f"{'Copied' if copy else 'Moved'} {file} to {dest_path}")
+        
+def move_or_copy_files():
+    directories = read_config(section="directory")
+    evaluations = read_config(section="evaluations")
+
+    # Define source and destination directories
+    base_directory = evaluations['completedatasets']
+    keyframes_segments_dir = os.path.join(base_directory, "keyframes")
+    video_segments_dir = os.path.join(base_directory, "video_segments")
+
+    os.makedirs(keyframes_segments_dir, exist_ok=True)
+    os.makedirs(video_segments_dir, exist_ok=True)
+    for video_id_dir in glob.glob(f"{base_directory}/*"):
+        video_id = os.path.basename(video_id_dir)
+        if os.path.isdir(video_id_dir) and video_id_dir not in [keyframes_segments_dir, video_segments_dir]:
+            # Define source directories
+            original_videos_dir = os.path.join(video_id_dir, 'originalvideos')
+            embeddings_dir = os.path.join(video_id_dir, 'keyframe_embeddings')
+            keyframes_dir = os.path.join(video_id_dir, 'keyframes')
+            keyframe_clips_dir = os.path.join(video_id_dir, 'keyframe_clips')
+            keyframe_clip_embeddings_dir = os.path.join(video_id_dir, 'keyframe_clip_embeddings')
+            keyframe_audio_clips_dir = os.path.join(video_id_dir, 'keyframe_audio_clips')
+
+            # Process files for keyframes segments
+            move_or_copy(original_videos_dir, keyframes_segments_dir, '.json', video_id, copy=True)
+            move_or_copy(keyframes_dir, keyframes_segments_dir, '.npy', video_id)
+            move_or_copy(keyframes_dir, keyframes_segments_dir, '.png', video_id)
+            move_or_copy(keyframes_dir, keyframes_segments_dir, '.json', video_id)
+            move_or_copy(embeddings_dir, keyframes_segments_dir, '.npy', video_id)
+            move_or_copy(embeddings_dir, keyframes_segments_dir, '.json', video_id)
+
+            # Process files for video segments
+            move_or_copy(keyframe_clips_dir, video_segments_dir, '.mp4', video_id)
+            move_or_copy(keyframe_clip_embeddings_dir, video_segments_dir, '.npy', video_id)
+            move_or_copy(keyframe_clip_embeddings_dir, video_segments_dir, '.json', video_id)
+            # Process files for audio segments into video dir
+            move_or_copy(keyframe_audio_clips_dir, video_segments_dir, '.txt', video_id)
+            move_or_copy(keyframe_audio_clips_dir, video_segments_dir, '.json', video_id)
+            move_or_copy(keyframe_audio_clips_dir, video_segments_dir, '.mp3', video_id)
+            shutil.rmtree(video_id_dir)
+            print(f"Removed directory: {video_id_dir}")
+            
 def create_parquet_from_videos(video_dir, parquet_file):
     data = []
     for index, file_name in enumerate(os.listdir(video_dir)):

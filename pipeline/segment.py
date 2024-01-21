@@ -4,7 +4,7 @@ from save_to_webdataset import package_datasets_to_webdataset_segmentation
 from whisper import main as whisper_main
 from successor_segmentation import SegmentSuccessorAnalyzer, run_analysis
 from fold_seams import main as fold_seams_main
-from utils import convert_types, rename_and_move 
+from utils import convert_types, rename_and_move, move_or_copy_files
 import os
 import shutil
 from pipeline import read_config, string_to_bool
@@ -47,6 +47,7 @@ def run_all_scripts():
         convert_types()
         print('Running save_to_webdataset')
         package_datasets_to_webdataset_segmentation()
+        move_or_copy_files()
     except Exception as e:
         print(f"An error occurred in the pipeline: {e}")
 

@@ -140,7 +140,7 @@ def setup_for_video_audio(vid):
             raise FileNotFoundError(f"No keyframe_data.json found for video id {vid}.")
         with open(json_path, 'r') as f:
             keyframe_data = json.load(f)
-        audio_clip_output = os.path.join(base_directory, directories['keyframe_audio_clip_output'], str(vid))
+        audio_clip_output = os.path.join(base_directory, directories['keyframe_audio_clip_output'])
         os.makedirs(audio_clip_output, exist_ok=True)
         return audio_files, video_files, key_video_files, embedding_files, keyframe_data
     except FileNotFoundError as e:
