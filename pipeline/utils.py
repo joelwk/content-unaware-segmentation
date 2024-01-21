@@ -79,7 +79,7 @@ def convert_types():
 
 def rename_and_move_files(src_directory, dest_directory, regex_pattern=None):
     files = glob.glob(f"{src_directory}/*")
-    if regex_pattern:
+    if regex_pattern: 
         sorted_files = sorted(files, key=lambda x: int(re.search(regex_pattern, os.path.basename(x)).group(1)) if re.search(regex_pattern, os.path.basename(x)) else 0)
     else:
         sorted_files = sorted(files, key=lambda x: int(os.path.basename(x).split('.')[0]))

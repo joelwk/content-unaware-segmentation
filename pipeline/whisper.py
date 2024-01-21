@@ -12,15 +12,8 @@ def read_keyframe_data(keyframe_json_path):
     with open(keyframe_json_path, 'r') as file:
         return json.load(file)
         
-def install_requirements():
-    print("Installing required packages and restarting...")
-    subprocess.run(["pip", "install", "torch", "torchvision", "torchaudio"])
-    subprocess.run(["pip", "install", "accelerate", "optimum"])
-    subprocess.run(["pip", "install", "ipython-autotime"])
-    subprocess.run(["pip", "install", "pydub"])
-    subprocess.run(["pip", "install","transformers"])
+
     
-install_requirements()
 import torch
 from pydub import AudioSegment
 from transformers import pipeline
@@ -128,7 +121,9 @@ def write_transcripts_for_keyframes(transcripts, keyframe_timestamps, yt_output_
         start_time, end_time = keyframe["timestamp"]
         start_time_sec, end_time_sec = start_time, end_time
         associated_transcripts = []
-        for transcript in transcripts:
+        transcript_segments = transcripts.get('en', [])
+        for transcript in transcript_segments:
+            print(transcript)
             transcript_start = time_to_seconds(transcript['start'])
             transcript_end = time_to_seconds(transcript['end'])
             if start_time_sec <= transcript_start < end_time_sec:
@@ -182,6 +177,8 @@ def process_individual_audio_file(audio_file,audio_path,initial_input_directory,
                     yt_transcripts = yt_transcripts['yt_meta_dict']['subtitles']
                     with open(keyframe_timeframes_path, 'r') as kf:
                         keyframe_timeframes = json.load(kf)
+
+
                     write_transcripts_for_keyframes(yt_transcripts, keyframe_timeframes, yt_output_dir)
                 else:
                     print(f"Unexpected JSON structure in {yt_transcripts_path}")
