@@ -16,7 +16,6 @@ directories = read_config(section="directory")
 thresholds = read_config(section="thresholds")
 
 def segment_video_using_keyframes_and_embeddings(video_path, keyframe_clip_output_dir, keyframe_timestamps, thresholds, suffix_=None):
-    print(keyframe_timestamps)
     if not isinstance(video_path, str):
         raise TypeError("video_path must be a string.")
     if not isinstance(keyframe_clip_output_dir, str):

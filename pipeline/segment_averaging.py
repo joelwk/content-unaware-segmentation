@@ -39,7 +39,7 @@ def process_videos_and_metadata(dataset_folder,emb_folder):
     for sub_folder in glob.glob(os.path.join(dataset_folder, '*')):
         video_files = glob.glob(os.path.join(sub_folder, '*.mp4'))
         clips = []
-        new_id = 0  # Initialize separate ID tracker
+        new_id = 0 
         for index, video_file_path in enumerate(video_files):
             duration = get_video_duration(video_file_path)
             if duration is None:
@@ -50,9 +50,8 @@ def process_videos_and_metadata(dataset_folder,emb_folder):
                 "duration": duration
             }
             clips.append(metadata)
-            new_id += 1  # Increment ID tracker\
+            new_id += 1
         clips_df = pd.DataFrame(clips)
-        # Check for empty DataFrame and skip if necessary
         if clips_df.empty:
             print(f"No clips found for {sub_folder}. Skipping.")
             continue
@@ -64,20 +63,20 @@ def process_videos_and_metadata(dataset_folder,emb_folder):
         for index, row in clips_df.iterrows():
             emb_file_path = os.path.join(dataset_folder, f"{str(index)}.npy")
             json_file_path = os.path.join(dataset_folder, f"{str(index)}.json")
-            # Check for existing embedding files
+
             if not os.path.exists(emb_file_path):
                 print(f"No embedding found for video {str(index)}. Skipping.")
                 continue
+
             average_embedding = get_average_embedding(emb_file_path)
-            average_embeddings[f"{str(index)}.mp4"] = average_embedding
-            avg_emb_folder = os.path.join(emb_folder, os.path.basename(sub_folder))
-            os.makedirs(avg_emb_folder, exist_ok=True)
-            average_emb_file_path = os.path.join(avg_emb_folder, f"{str(index)}_average.npy")
-            np.save(average_emb_file_path, average_embedding)
-            # Move the corresponding JSON files
-            new_json_file_path = os.path.join(avg_emb_folder, f"{str(index)}.json")
-            os.rename(json_file_path, new_json_file_path)
-            # Remove the original embedding file to clean up
+            if average_embedding is not None:
+                average_embeddings[f"{str(index)}.mp4"] = average_embedding
+                avg_emb_folder = os.path.join(emb_folder, os.path.basename(sub_folder))
+                os.makedirs(avg_emb_folder, exist_ok=True)
+                average_emb_file_path = os.path.join(avg_emb_folder, f"{str(index)}_average.npy")
+                np.save(average_emb_file_path, average_embedding)
+                new_json_file_path = os.path.join(avg_emb_folder, f"{str(index)}.json")
+                os.rename(json_file_path, new_json_file_path)
             os.remove(emb_file_path)
 
 def main():
