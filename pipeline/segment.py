@@ -46,8 +46,8 @@ def run_all_scripts():
         print('Running convert_types')
         convert_types()
         print('Running save_to_webdataset')
-        package_datasets_to_webdataset_segmentation()
         move_or_copy_files()
+        package_datasets_to_webdataset_segmentation()
     except Exception as e:
         print(f"An error occurred in the pipeline: {e}")
 

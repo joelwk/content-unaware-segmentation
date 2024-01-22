@@ -113,17 +113,18 @@ def move_or_copy(src_path, dest_dir, file_extension, video_id, copy=False):
     for file in glob.glob(f"{src_path}/**/*{file_extension}", recursive=True):
         dest_file_name = f"{video_id}_{os.path.basename(file)}"
         dest_path = os.path.join(dest_dir, dest_file_name)
+        if os.path.exists(dest_path):
+            print(f"File {dest_path} already exists. Skipping.")
+            continue
         if copy:
             shutil.copy(file, dest_path)
         else:
             shutil.move(file, dest_path)
         print(f"{'Copied' if copy else 'Moved'} {file} to {dest_path}")
-        
+
 def move_or_copy_files():
     directories = read_config(section="directory")
     evaluations = read_config(section="evaluations")
-
-    # Define source and destination directories
     base_directory = evaluations['completedatasets']
     keyframes_segments_dir = os.path.join(base_directory, "keyframes")
     video_segments_dir = os.path.join(base_directory, "video_segments")
@@ -133,27 +134,21 @@ def move_or_copy_files():
     for video_id_dir in glob.glob(f"{base_directory}/*"):
         video_id = os.path.basename(video_id_dir)
         if os.path.isdir(video_id_dir) and video_id_dir not in [keyframes_segments_dir, video_segments_dir]:
-            # Define source directories
             original_videos_dir = os.path.join(video_id_dir, 'originalvideos')
             embeddings_dir = os.path.join(video_id_dir, 'keyframe_embeddings')
             keyframes_dir = os.path.join(video_id_dir, 'keyframes')
             keyframe_clips_dir = os.path.join(video_id_dir, 'keyframe_clips')
             keyframe_clip_embeddings_dir = os.path.join(video_id_dir, 'keyframe_clip_embeddings')
             keyframe_audio_clips_dir = os.path.join(video_id_dir, 'keyframe_audio_clips')
-
-            # Process files for keyframes segments
             move_or_copy(original_videos_dir, keyframes_segments_dir, '.json', video_id, copy=True)
             move_or_copy(keyframes_dir, keyframes_segments_dir, '.npy', video_id)
             move_or_copy(keyframes_dir, keyframes_segments_dir, '.png', video_id)
             move_or_copy(keyframes_dir, keyframes_segments_dir, '.json', video_id)
             move_or_copy(embeddings_dir, keyframes_segments_dir, '.npy', video_id)
             move_or_copy(embeddings_dir, keyframes_segments_dir, '.json', video_id)
-
-            # Process files for video segments
             move_or_copy(keyframe_clips_dir, video_segments_dir, '.mp4', video_id)
             move_or_copy(keyframe_clip_embeddings_dir, video_segments_dir, '.npy', video_id)
             move_or_copy(keyframe_clip_embeddings_dir, video_segments_dir, '.json', video_id)
-            # Process files for audio segments into video dir
             move_or_copy(keyframe_audio_clips_dir, video_segments_dir, '.txt', video_id)
             move_or_copy(keyframe_audio_clips_dir, video_segments_dir, '.json', video_id)
             move_or_copy(keyframe_audio_clips_dir, video_segments_dir, '.mp3', video_id)
